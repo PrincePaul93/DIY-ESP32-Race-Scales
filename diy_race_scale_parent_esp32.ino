@@ -1,8 +1,3 @@
-/*
-traviscea DIY Race Scales – Version 1.0
-Copyright (c) 2026 Travis Way
-*/
-
 #define ARDUINO_USB_CDC_ON_BOOT 1
 
 #include <WiFi.h>
@@ -657,10 +652,23 @@ void handleRoot(){
   <script>
   let useKg = false;
 
-  function calibrate() {
-    let pad = prompt("Pad (FL FR RL RR)")
-    let weight = prompt("Known weight")
-    fetch("/calibrate?pad="+pad+"&weight="+weight)
+  function calibrate(){
+
+    let pad = prompt("Pad (FL FR RL RR)");
+    if(!pad) return;
+
+    let weight = parseFloat(prompt(
+      "Known weight (" + (useKg ? "KG" : "LBS") + ")"
+    ));
+
+    if(isNaN(weight)) return;
+
+    // convert KG -> LBS before sending to ESP32
+    if(useKg){
+      weight = weight * 2.20462;
+    }
+
+    fetch("/calibrate?pad=" + pad + "&weight=" + weight);
   }
 
   function format(val){
