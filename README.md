@@ -56,7 +56,7 @@ https://www.amazon.com/dp/B0FW4Y4FSL?&linkCode=ll2&tag=traviscea05-20&linkId=2dc
 Load cells(48, buy 3 sets of 20) = $45 
 https://www.amazon.com/dp/B09KGSGL18?social_share=cm_sw_r_cp_ud_dp_BH1Y8XC925MPHF1E74TW&linkCode=ll2&tag=traviscea05-20&linkId=46be772bed19824dc515417869be07c8&language=en_US&ref_=as_li_ss_tl
 
-Alternative Link for Load cells if others sell out
+Alternative Link for Load cells if others sell out(50 pack) = 35$
 https://www.amazon.com/dp/B0FMNHCGMB?social_share=cm_sw_r_cso_cp_apin_dp_ZTAPC0312YVC65RHH3ZX&linkCode=ll2&tag=traviscea05-20&linkId=66c7a8294df63c4d4caa6ed5f871bc77&language=en_US&ref_=as_li_ss_tl
 
 Wood 2x12x8 = $20 
