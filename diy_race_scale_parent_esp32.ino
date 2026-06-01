@@ -16,12 +16,20 @@ Preferences prefs;
 
 
 //Change to match your "master board"
-#define HX_DT 4
-#define HX_SCK 5
+#define HX_DT_A 4
+#define HX_SCK_A 5
+#define HX_DT_B 16
+#define HX_SCK_B 17
+#define HX_DT_C 18
+#define HX_SCK_C 19
+#define FL_BAT_PIN 34
 
 typedef struct {
   char pad[4];
   float weight;
+  float wA;
+  float wB;
+  float wC;
   float battery;
 } ScaleData;
 
@@ -40,7 +48,14 @@ float FR_batt=0;
 float RL_batt=0;
 float RR_batt=0;
 
-HX711 scale;
+HX711 scaleA;
+HX711 scaleB;
+HX711 scaleC;
+
+float FL_wA=0, FL_wB=0, FL_wC=0;
+float FR_wA=0, FR_wB=0, FR_wC=0;
+float RL_wA=0, RL_wB=0, RL_wC=0;
+float RR_wA=0, RR_wB=0, RR_wC=0;
 
 float FL_cal = 1.0;
 float FR_cal = 1.0;
@@ -88,6 +103,27 @@ float FR=0;
 float RL=0;
 float RR=0;
 
+bool shouldRestart = false;
+unsigned long restartTime = 0;
+int hxCount = 3;
+
+// ---------- DYNAMIC MAC & ACK TRACKING ----------
+uint8_t FR_mac[6] = {0};
+uint8_t RL_mac[6] = {0};
+uint8_t RR_mac[6] = {0};
+bool FR_mac_set = false;
+bool RL_mac_set = false;
+bool RR_mac_set = false;
+
+bool is_updating = false;
+bool FR_ack_required = false;
+bool RL_ack_required = false;
+bool RR_ack_required = false;
+
+bool FR_ack_received = false;
+bool RL_ack_received = false;
+bool RR_ack_received = false;
+
 int battPercent(float v){
   int p = (v - 3.0) * 100 / 1.2;
   if(p>100) p=100;
@@ -95,17 +131,14 @@ int battPercent(float v){
   return p;
 }
 
-void applyStability(float value, float &lastValue, bool &locked){
-
+void applyStability(float value, float &lastValue, bool &locked) {
   float diff = abs(value - lastValue);
-
-  if(diff < .5){
+  if (diff < 0.5) {
     locked = true;
-  } else if(diff > 1.0){   // hysteresis (important)
+  } else if (diff > 1.0) { // hysteresis (important)
     locked = false;
     lastValue = value;
   }
-
 }
 
 void handleData(){
@@ -187,7 +220,12 @@ void handleData(){
   json+="\"leftpct\":"+String(leftpct,1)+",";
   json+="\"rightpct\":"+String(rightpct,1)+",";
 
-  json+="\"cross\":"+String(crosspct,1);
+  json+="\"cross\":"+String(crosspct,1)+",";
+
+  json+="\"fl_wa\":"+String(FL_wA)+",\"fl_wb\":"+String(FL_wB)+",\"fl_wc\":"+String(FL_wC)+",";
+  json+="\"fr_wa\":"+String(FR_wA)+",\"fr_wb\":"+String(FR_wB)+",\"fr_wc\":"+String(FR_wC)+",";
+  json+="\"rl_wa\":"+String(RL_wA)+",\"rl_wb\":"+String(RL_wB)+",\"rl_wc\":"+String(RL_wC)+",";
+  json+="\"rr_wa\":"+String(RR_wA)+",\"rr_wb\":"+String(RR_wB)+",\"rr_wc\":"+String(RR_wC);
 
   json+="}";
 
@@ -196,7 +234,11 @@ void handleData(){
 
 void handleTare(){
 
-  FL_offset = scale.read_average(10);
+  if (hxCount == 1) {
+    FL_offset = scaleA.read_average(10);
+  } else {
+    FL_offset = scaleA.read_average(10) + scaleB.read_average(10) + scaleC.read_average(10);
+  }
   FR_offset = FR_raw;
   RL_offset = RL_raw;
   RR_offset = RR_raw;
@@ -219,25 +261,38 @@ void handleRoot(){
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
+  :root {
+    --bg-main: #111;
+    --bg-main-alt: #0c0c0c;
+    --bg-panel: #0e0e0e;
+    --text-main: white;
+    --accent: #3b82f6;
+  }
+  body.light-theme {
+    --bg-main: #f0f0f0;
+    --bg-main-alt: #e4e4e4;
+    --bg-panel: #ffffff;
+    --text-main: #111;
+  }
 
   body{
     margin:0;
     font-family:Arial;
-    color:white;
+    color:var(--text-main);
     text-align:center;
 
   background:
     repeating-linear-gradient(
       45deg,
-      #111,
-      #111 6px,
-      #0c0c0c 6px,
-      #0c0c0c 12px
+      var(--bg-main),
+      var(--bg-main) 6px,
+      var(--bg-main-alt) 6px,
+      var(--bg-main-alt) 12px
     );
   }
 
   .header{
-    background:#16a34a;
+    background:var(--accent);
     padding:8px;
     font-weight:bold;
   }
@@ -249,6 +304,58 @@ void handleRoot(){
     aspect-ratio: 8 / 7;
     margin:auto;
   }
+.battery-panel{
+  margin:10px;
+  padding:10px;
+  border:2px solid var(--accent);
+  border-radius:10px;
+  background:#0e0e0e;
+
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+}
+
+.battery-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  color:var(--accent);
+  font-size:12px;
+}
+
+.battery-icon{
+  width:34px;
+  height:14px;
+  border:2px solid var(--accent);
+  border-radius:3px;
+  position:relative;
+  overflow:hidden;
+}
+
+.battery-icon::after{
+  content:'';
+  position:absolute;
+  right:-5px;
+  top:3px;
+  width:3px;
+  height:6px;
+  background:var(--accent);
+  border-radius:1px;
+}
+
+.battery-fill{
+  height:100%;
+  width:100%;
+  background:var(--accent);
+  transition:width .2s linear;
+}
+
+.battery-text{
+  font-size:11px;
+}
+
 
   .vline{
     position:absolute;
@@ -256,7 +363,7 @@ void handleRoot(){
     bottom:0;
     left:50%;
     width:2px;
-    background:#16a34a;
+    background:var(--accent);
   }
 
   .hline{
@@ -265,7 +372,7 @@ void handleRoot(){
     right:0;
     top:50%;
     height:2px;
-    background:#16a34a;
+    background:var(--accent);
   }
 
   .weight{
@@ -292,7 +399,7 @@ void handleRoot(){
 
   .small{
     font-size:14px;
-    color:#22c55e;
+    color:var(--accent);
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -318,7 +425,7 @@ void handleRoot(){
     align-items:center;
     gap:4px;
     font-size:14px;
-    color:#22c55e;
+    color:var(--accent);
     min-width:40px;
     width:auto;
   }
@@ -335,10 +442,10 @@ void handleRoot(){
 
   .panel{
     margin:10px;
-    border:2px solid #16a34a;
+    border:2px solid var(--accent);
     border-radius:10px;
     padding:12px;
-    background:#0e0e0e;
+    background:var(--bg-panel);
   }
 
   /* table */
@@ -387,7 +494,7 @@ void handleRoot(){
   }
 
   .val{
-    color:#22c55e;
+    color:var(--accent);
     font-weight:bold;
     font-variant-numeric: tabular-nums;
     text-align:right;
@@ -418,8 +525,8 @@ void handleRoot(){
   }
 
   .zero{
-    background:#16a34a;
-    color:white;
+    background:var(--accent);
+    color:var(--bg-main);
   }
 
   .cal{
@@ -437,7 +544,7 @@ void handleRoot(){
   }
 
   .online{
-    background:#22c55e;
+    background:var(--accent);
   }
 
   .offline{
@@ -455,7 +562,7 @@ void handleRoot(){
 
   .locked{
     opacity:1;
-    color:#22c55e;
+    color:var(--accent);
   }
   .digits{
     display:flex;
@@ -512,6 +619,25 @@ void handleRoot(){
     margin-bottom:35px;
   }
 
+  /* settings modal */
+  .modal-overlay{
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:99;
+  }
+  .modal{
+    background:var(--bg-panel); border:2px solid var(--accent); border-radius:10px; padding:20px;
+    width:90%; max-width:400px; text-align:left; color:var(--text-main);
+  }
+  .modal h3 { margin-top:0; color:var(--accent); }
+  .settings-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+  .settings-btn { background:var(--bg-main-alt); color:var(--text-main); border:1px solid var(--accent); padding:8px 16px; border-radius:4px; cursor:pointer;}
+  .settings-icon { position:absolute; right:15px; top:5px; cursor:pointer; font-size:20px; }
+  
+  /* spinner animation */
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
   </style>
 
   </head>
@@ -519,7 +645,8 @@ void handleRoot(){
   <body>
 
   <div class="header">
-  DIY Corner Weight System
+  <span data-i18n="title">Corner Weight System</span>
+  <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
   </div>
 
   <div class="cararea">
@@ -579,7 +706,7 @@ void handleRoot(){
 
   <svg width="120" height="220" viewBox="0 0 220 300">
 
-  <path fill="#16a34a" stroke="#111" stroke-width="3" d="
+  <path fill="var(--accent)" stroke="#111" stroke-width="3" d="
   M85 10
   L135 10
   Q155 20 160 50
@@ -598,8 +725,8 @@ void handleRoot(){
   <rect x="75" y="55" width="70" height="40" rx="10" fill="#2f2f2f"/>
   <rect x="75" y="215" width="70" height="40" rx="10" fill="#2f2f2f"/>
 
-  <polygon points="55,120 45,130 55,140" fill="#16a34a"/>
-  <polygon points="165,120 175,130 165,140" fill="#16a34a"/>
+  <polygon points="55,120 45,130 55,140" fill="var(--accent)"/>
+  <polygon points="165,120 175,130 165,140" fill="var(--accent)"/>
 
   </svg>
 
@@ -612,38 +739,38 @@ void handleRoot(){
     <thead>
       <tr>
         <th></th>
-        <th>Current</th>
+        <th data-i18n="current">Current</th>
         <th>%</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td>Cross</td>
+        <td data-i18n="cross">Cross</td>
         <td>-</td>
         <td id="crosspct"></td>
       </tr>
       <tr>
-        <td>Left</td>
+        <td data-i18n="left">Left</td>
         <td class="val" id="left"></td>
         <td id="leftpct"></td>
       </tr>
       <tr>
-        <td>Right</td>
+        <td data-i18n="right">Right</td>
         <td class="val" id="right"></td>
         <td id="rightpct"></td>
       </tr>
       <tr>
-        <td>Front</td>
+        <td data-i18n="front">Front</td>
         <td class="val" id="front"></td>
         <td id="frontpct"></td>
       </tr>
       <tr>
-      <td>Rear</td>
+        <td data-i18n="rear">Rear</td>
         <td class="val" id="rear"></td>
         <td id="rearpct"></td>
       </tr>
       <tr class="totalrow">
-        <td>Total</td>
+        <td data-i18n="total">Total</td>
         <td class="val" id="total"></td>
       <td></td>
       </tr>
@@ -651,31 +778,563 @@ void handleRoot(){
     </table>
   </div>
   <div class="buttons">
-    <button class="zero" onclick="tare()">ZERO</button>
-    <button class="cal" onclick="calibrate()">CAL</button>
-    <button onclick="toggleUnits()" id="unitBtn">LBS</button>
+    <button class="zero" onclick="tare()" data-i18n="zero">ZERO</button>
+    <button class="cal" onclick="openCalWizard()" data-i18n="cal">CAL</button>
+    <button onclick="toggleUnits()" id="unitBtn">KG</button>
   </div>
-  <script>
-  let useKg = false;
+  
+<div class="battery-panel">
 
-  function calibrate(){
+  <div class="battery-item">
+    <div class="battery-label">FL</div>
+    <div class="battery-icon">
+      <div class="battery-fill" id="fl_fill"></div>
+    </div>
+    <div class="battery-text" id="fl_batt">100%</div>
+  </div>
 
-    let pad = prompt("Pad (FL FR RL RR)");
-    if(!pad) return;
+  <div class="battery-item">
+    <div class="battery-label">FR</div>
+    <div class="battery-icon">
+      <div class="battery-fill" id="fr_fill"></div>
+    </div>
+    <div class="battery-text" id="fr_batt">100%</div>
+  </div>
 
-    let weight = parseFloat(prompt(
-      "Known weight (" + (useKg ? "KG" : "LBS") + ")"
-    ));
+  <div class="battery-item">
+    <div class="battery-label">RL</div>
+    <div class="battery-icon">
+      <div class="battery-fill" id="rl_fill"></div>
+    </div>
+    <div class="battery-text" id="rl_batt">100%</div>
+  </div>
 
-    if(isNaN(weight)) return;
+  <div class="battery-item">
+    <div class="battery-label">RR</div>
+    <div class="battery-icon">
+      <div class="battery-fill" id="rr_fill"></div>
+    </div>
+    <div class="battery-text" id="rr_batt">100%</div>
+  </div>
 
-    // convert KG -> LBS before sending to ESP32
-    if(useKg){
-      weight = weight * 2.20462;
+</div>
+
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <h3 data-i18n="settings_title">Settings</h3>
+      
+      <div class="settings-row">
+        <span data-i18n="theme">Theme:</span>
+        <button class="settings-btn" onclick="toggleTheme()" id="themeBtn">Dark Mode</button>
+      </div>
+
+      <div class="settings-row">
+        <span data-i18n="lang_label">Language:</span>
+        <select id="langSelect" onchange="setLanguage(this.value)" style="background:var(--bg-main-alt); color:var(--text-main); border:1px solid var(--accent); padding:6px 12px; border-radius:4px; cursor:pointer; font-size:14px; outline:none;">
+          <option value="en">English</option>
+          <option value="de">Deutsch</option>
+          <option value="es">Español</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <span data-i18n="hx_label">HX711 Count:</span>
+        <select id="hxSelect" style="background:var(--bg-main-alt); color:var(--text-main); border:1px solid var(--accent); padding:6px 12px; border-radius:4px; cursor:pointer; font-size:14px; outline:none;">
+          <option value="1">1</option>
+          <option value="3">3</option>
+        </select>
+      </div>
+      
+      <div class="settings-row">
+        <span data-i18n="accent">Accent Color:</span>
+        <input type="color" id="accentPicker" onchange="updateAccent(this.value)">
+      </div>
+      
+      <hr style="border-color:var(--accent); margin:15px 0;">
+      
+      <div style="font-size:14px; margin-bottom:10px; font-weight:bold; color:var(--accent);" data-i18n="wifi_title">WiFi Access Point</div>
+      <div class="settings-row" style="flex-direction:column; align-items:stretch; gap:4px; margin-bottom:10px;">
+        <label style="font-size:12px; opacity:0.8; text-align:left;" data-i18n="wifi_ssid">Network Name (SSID):</label>
+        <input type="text" id="wifiSsidInput" style="background:var(--bg-main-alt); color:var(--text-main); border:1px solid var(--accent); padding:8px; border-radius:4px; font-size:14px;">
+      </div>
+      <div class="settings-row" style="flex-direction:column; align-items:stretch; gap:4px; margin-bottom:15px;">
+        <label style="font-size:12px; opacity:0.8; text-align:left;" data-i18n="wifi_pass">Password (min 8 chars):</label>
+        <input type="password" id="wifiPassInput" style="background:var(--bg-main-alt); color:var(--text-main); border:1px solid var(--accent); padding:8px; border-radius:4px; font-size:14px;">
+      </div>
+      <div class="settings-row" style="justify-content:flex-end;">
+        <button class="settings-btn" style="background:var(--accent); color:var(--bg-main); font-weight:bold; border:none;" onclick="saveWifiSettings()" data-i18n="save_reboot">Save & Reboot</button>
+      </div>
+      
+      <hr style="border-color:var(--accent); margin:15px 0;">
+      
+      <div id="debugPanel" style="font-size:12px; color:var(--accent);">
+        <h4 style="margin:0 0 8px 0; color:var(--text-main);" data-i18n="debug_title">Raw Debug Info</h4>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span><b>FL</b> A:<span id="fl_wa">-</span> B:<span id="fl_wb">-</span> C:<span id="fl_wc">-</span></span>
+          <span><b>FR</b> A:<span id="fr_wa">-</span> B:<span id="fr_wb">-</span> C:<span id="fr_wc">-</span></span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span><b>RL</b> A:<span id="rl_wa">-</span> B:<span id="rl_wb">-</span> C:<span id="rl_wc">-</span></span>
+          <span><b>RR</b> A:<span id="rr_wa">-</span> B:<span id="rr_wb">-</span> C:<span id="rr_wc">-</span></span>
+        </div>
+      </div>
+      
+      <div style="text-align:right; margin-top:20px;">
+        <button class="settings-btn" onclick="toggleSettings()" data-i18n="close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Updating Overlay Modal -->
+  <div class="modal-overlay" id="updateModal">
+    <div class="modal" style="max-width:400px; text-align:center;">
+      <h3 id="updateTitle" style="margin-bottom:15px; color:var(--accent);">Applying Settings</h3>
+      <div id="updateSpinner" class="spinner" style="margin:20px auto; width:40px; height:40px; border:4px solid #333; border-top:4px solid var(--accent); border-radius:50%; animation:spin 1s linear infinite;"></div>
+      <div style="font-size:14px; margin-bottom:20px; line-height:1.4;" id="updateStatusText">Broadcasting settings update to scales...</div>
+      
+      <div style="text-align:left; background:var(--bg-main-alt); border:1px solid #333; border-radius:6px; padding:12px; margin-bottom:20px; font-size:13px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span>FR Pad:</span>
+          <span id="update_fr_status" style="font-weight:bold;">Offline</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span>RL Pad:</span>
+          <span id="update_rl_status" style="font-weight:bold;">Offline</span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span>RR Pad:</span>
+          <span id="update_rr_status" style="font-weight:bold;">Offline</span>
+        </div>
+      </div>
+      
+      <button class="settings-btn" id="forceRebootBtn" style="background:#ef4444; border:none; color:white; font-weight:bold; display:none;" onclick="forceReboot()">Force Reboot Master</button>
+    </div>
+  </div>
+
+  <!-- Calibration Wizard Modal -->
+  <div class="modal-overlay" id="calModal">
+    <div class="modal" style="max-width:450px;">
+      <h3 data-i18n="cal_wizard">Calibration Wizard</h3>
+      
+      <!-- Step 1: Select Pad & Tare -->
+      <div id="calStep1" class="cal-step">
+        <div style="font-size:14px; margin-bottom:15px; line-height:1.4;" data-i18n="cal_step1_desc">Select the scale pad you wish to calibrate, clear all weight from it, and click Zero to tare.</div>
+        
+        <div class="settings-row" style="margin-bottom:15px;">
+          <span data-i18n="cal_pad_select">Select Pad:</span>
+          <select id="calPad" style="background:var(--bg-main-alt); color:var(--text-main); border:1px solid var(--accent); padding:6px 12px; border-radius:4px; font-size:14px; outline:none; cursor:pointer;">
+            <option value="FL">FL (Front Left)</option>
+            <option value="FR">FR (Front Right)</option>
+            <option value="RL">RL (Rear Left)</option>
+            <option value="RR">RR (Rear Right)</option>
+          </select>
+        </div>
+        
+        <div style="text-align:right; margin-top:20px;">
+          <button class="settings-btn" onclick="closeCalWizard()" style="margin-right:8px;" data-i18n="close">Close</button>
+          <button class="settings-btn" style="background:var(--accent); color:var(--bg-main); font-weight:bold; border:none;" onclick="calWizardTare()" data-i18n="zero">ZERO</button>
+        </div>
+      </div>
+      
+      <!-- Step 2: Place Known Weight & Input Value -->
+      <div id="calStep2" class="cal-step" style="display:none;">
+        <div style="font-size:14px; margin-bottom:15px; line-height:1.4;" data-i18n="cal_step2_desc">Place a known heavy weight on the selected scale pad and enter its value below:</div>
+        
+        <div class="settings-row" style="flex-direction:column; align-items:stretch; gap:6px; margin-bottom:15px;">
+          <label style="font-size:12px; opacity:0.8; text-align:left;" id="calWeightLabel"></label>
+          <input type="number" id="calKnownWeight" step="0.1" style="background:var(--bg-main-alt); color:var(--text-main); border:1px solid var(--accent); padding:8px; border-radius:4px; font-size:14px; outline:none;">
+        </div>
+        
+        <div style="text-align:right; margin-top:20px;">
+          <button class="settings-btn" onclick="showCalStep(1)" style="margin-right:8px;" data-i18n="cal_btn_prev">Back</button>
+          <button class="settings-btn" style="background:var(--accent); color:var(--bg-main); font-weight:bold; border:none;" onclick="calWizardSubmit()" data-i18n="cal_btn_finish">Calibrate & Save</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Success Screen -->
+      <div id="calStep3" class="cal-step" style="display:none;">
+        <div style="text-align:center; padding:20px 0;">
+          <div style="font-size:40px; margin-bottom:15px;">✅</div>
+          <h4 style="margin:0 0 10px 0; color:var(--accent);" data-i18n="cal_success">Calibration Completed!</h4>
+        </div>
+        <div style="text-align:right; margin-top:20px;">
+          <button class="settings-btn" onclick="closeCalWizard()" data-i18n="close">Close</button>
+        </div>
+      </div>
+      
+    </div>
+   <script>
+  let useKg = true;
+
+  const i18n = {
+    en: {
+      title: "Corner Weight System",
+      theme: "Theme:",
+      theme_dark: "Dark Mode",
+      theme_light: "Light Mode",
+      accent: "Accent Color:",
+      lang_label: "Language:",
+      wifi_title: "WiFi Access Point",
+      wifi_ssid: "Network Name (SSID):",
+      wifi_pass: "Password (min 8 chars):",
+      save_reboot: "Save & Reboot",
+      close: "Close",
+      current: "Current",
+      cross: "Cross",
+      left: "Left",
+      right: "Right",
+      front: "Front",
+      rear: "Rear",
+      total: "Total",
+      zero: "ZERO",
+      cal: "CAL",
+      kg: "KG",
+      lbs: "LBS",
+      settings_title: "Settings",
+      cal_wizard: "Calibration Wizard",
+      cal_step1_desc: "Select the scale pad you wish to calibrate, clear all weight from it, and click Zero to tare.",
+      cal_pad_select: "Select Pad:",
+      cal_step2_desc: "Place a known heavy weight on the selected scale pad and enter its value below:",
+      cal_btn_prev: "Back",
+      cal_btn_finish: "Calibrate & Save",
+      cal_success: "Calibration Completed!",
+      debug_title: "Raw Debug Info",
+      wifi_confirm: "Are you sure you want to change settings? The device will reboot and you will need to reconnect to: ",
+      wifi_success: "Settings saved successfully. Reconnect to the new network in a few seconds.",
+      wifi_error: "Failed to save settings: ",
+      ssid_empty: "SSID cannot be empty",
+      pass_short: "Password must be at least 8 characters",
+      hx_label: "HX711 Count:"
+    },
+    de: {
+      title: "Radlastwaagen-System",
+      theme: "Design:",
+      theme_dark: "Dunkelmodus",
+      theme_light: "Hellmodus",
+      accent: "Akzentfarbe:",
+      lang_label: "Sprache:",
+      wifi_title: "WLAN-Zugangspunkt",
+      wifi_ssid: "Netzwerkname (SSID):",
+      wifi_pass: "Passwort (mind. 8 Zeichen):",
+      save_reboot: "Speichern & Neustart",
+      close: "Schließen",
+      current: "Aktuell",
+      cross: "Diagonale",
+      left: "Links",
+      right: "Rechts",
+      front: "Vorne",
+      rear: "Hinten",
+      total: "Gesamt",
+      zero: "NULLEN",
+      cal: "KAL",
+      kg: "KG",
+      lbs: "LBS",
+      settings_title: "Einstellungen",
+      cal_wizard: "Kalibrierungs-Assistent",
+      cal_step1_desc: "Wählen Sie das zu kalibrierende Radlast-Pad aus, entfernen Sie jegliche Last und klicken Sie auf Nullen.",
+      cal_pad_select: "Pad wählen:",
+      cal_step2_desc: "Legen Sie ein bekanntes Gewicht auf das ausgewählte Pad und tragen Sie den Wert unten ein:",
+      cal_btn_prev: "Zurück",
+      cal_btn_finish: "Kalibrieren & Speichern",
+      cal_success: "Kalibrierung abgeschlossen!",
+      debug_title: "Rohdaten-Debug",
+      wifi_confirm: "Sind Sie sicher, dass Sie die Einstellungen ändern möchten? Das Gerät wird neu gestartet und Sie müssen sich erneut verbinden mit: ",
+      wifi_success: "Einstellungen erfolgreich gespeichert. Verbinden Sie sich in Kürze mit dem neuen Netzwerk.",
+      wifi_error: "Einstellungen konnten nicht gespeichert werden: ",
+      ssid_empty: "SSID darf nicht leer sein",
+      pass_short: "Passwort muss mindestens 8 Zeichen lang sein",
+      hx_label: "Anzahl HX711:"
+    },
+    es: {
+      title: "Sistema de Pesaje",
+      theme: "Tema:",
+      theme_dark: "Modo Oscuro",
+      theme_light: "Modo Claro",
+      accent: "Color de Acento:",
+      lang_label: "Idioma:",
+      wifi_title: "Punto de Acceso WiFi",
+      wifi_ssid: "Nombre de Red (SSID):",
+      wifi_pass: "Contraseña (mín. 8 caracteres):",
+      save_reboot: "Guardar y Reiniciar",
+      close: "Cerrar",
+      current: "Actual",
+      cross: "Cruzado",
+      left: "Izquierda",
+      right: "Derecha",
+      front: "Delantero",
+      rear: "Trasero",
+      total: "Total",
+      zero: "CERO",
+      cal: "CAL",
+      kg: "KG",
+      lbs: "LBS",
+      settings_title: "Ajustes",
+      cal_wizard: "Asistente de Calibración",
+      cal_step1_desc: "Seleccione el plato de pesaje que desea calibrar, retire cualquier carga y haga clic en Cero.",
+      cal_pad_select: "Seleccionar Plato:",
+      cal_step2_desc: "Coloque un peso conocido en el plato seleccionado e ingrese su valor a continuación:",
+      cal_btn_prev: "Atrás",
+      cal_btn_finish: "Calibrar y Guardar",
+      cal_success: "¡Calibración Completada!",
+      debug_title: "Info de Debug",
+      wifi_confirm: "¿Está seguro de que desea cambiar la configuración? El dispositivo se reiniciará y deberá volver a conectarse a: ",
+      wifi_success: "Configuración guardada. Conéctese a la nueva red en unos segundos.",
+      wifi_error: "Error al guardar la configuración: ",
+      ssid_empty: "El SSID no puede estar vacío",
+      pass_short: "La contraseña debe tener al menos 8 caracteres",
+      hx_label: "Cantidad de HX711:"
+    }
+  };
+
+  // --- UI Settings Logic ---
+  let currentTheme = localStorage.getItem('theme') || 'dark';
+  let currentAccent = localStorage.getItem('accent') || '#3b82f6';
+  let currentLang = localStorage.getItem('lang') || 'en';
+
+  function applySettings() {
+    if(currentTheme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+    setLanguage(currentLang);
+    document.documentElement.style.setProperty('--accent', currentAccent);
+    document.getElementById('accentPicker').value = currentAccent;
+  }
+
+  function setLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('lang', lang);
+    document.getElementById("langSelect").value = lang;
+
+    // Translate all static nodes with data-i18n
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      let key = el.getAttribute("data-i18n");
+      if (i18n[lang] && i18n[lang][key]) {
+        el.innerText = i18n[lang][key];
+      }
+    });
+
+    // Update dynamic text
+    if (currentTheme === 'light') {
+      document.getElementById('themeBtn').innerText = i18n[lang].theme_light;
+    } else {
+      document.getElementById('themeBtn').innerText = i18n[lang].theme_dark;
     }
 
-    fetch("/calibrate?pad=" + pad + "&weight=" + weight);
+    // Refresh unit button text
+    document.getElementById("unitBtn").innerText = useKg ? i18n[lang].kg : i18n[lang].lbs;
   }
+
+  function toggleTheme() {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', currentTheme);
+    applySettings();
+  }
+
+  function updateAccent(color) {
+    currentAccent = color;
+    localStorage.setItem('accent', color);
+    applySettings();
+  }
+
+  function loadWifiConfig() {
+    fetch("/wifi_config")
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById("wifiSsidInput").value = data.ssid || "";
+      document.getElementById("wifiPassInput").value = data.pass || "";
+      document.getElementById("hxSelect").value = data.hx_count || 3;
+    })
+    .catch(err => console.error("Error loading WiFi config:", err));
+  }
+
+  function toggleSettings() {
+    let m = document.getElementById("settingsModal");
+    if (m.style.display !== "flex") {
+      loadWifiConfig();
+      m.style.display = "flex";
+    } else {
+      m.style.display = "none";
+    }
+  }
+
+  function saveWifiSettings() {
+    let ssid = document.getElementById("wifiSsidInput").value.trim();
+    let pass = document.getElementById("wifiPassInput").value.trim();
+    let hx = document.getElementById("hxSelect").value;
+    if (ssid.length === 0) {
+      alert(i18n[currentLang].ssid_empty);
+      return;
+    }
+    if (pass.length < 8) {
+      alert(i18n[currentLang].pass_short);
+      return;
+    }
+    if (confirm(i18n[currentLang].wifi_confirm + ssid)) {
+      fetch("/save_wifi?ssid=" + encodeURIComponent(ssid) + "&pass=" + encodeURIComponent(pass) + "&hx_count=" + hx)
+      .then(r => {
+        if (r.ok) {
+          toggleSettings();
+          showUpdateModal();
+        } else {
+          r.text().then(text => alert(i18n[currentLang].wifi_error + text));
+        }
+      })
+      .catch(err => alert(i18n[currentLang].wifi_error + err));
+    }
+  }
+
+  let pollInterval = null;
+
+  function showUpdateModal() {
+    document.getElementById("updateModal").style.display = "flex";
+    document.getElementById("forceRebootBtn").style.display = "none";
+    document.getElementById("updateSpinner").style.display = "block";
+    document.getElementById("updateStatusText").innerText = "Broadcasting settings update to scales...";
+    document.getElementById("update_fr_status").innerText = "Checking...";
+    document.getElementById("update_rl_status").innerText = "Checking...";
+    document.getElementById("update_rr_status").innerText = "Checking...";
+    
+    // Start polling status
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(pollUpdateStatus, 500);
+    // Show force reboot button after 8 seconds in case of problems
+    setTimeout(() => {
+      let btn = document.getElementById("forceRebootBtn");
+      if (btn) btn.style.display = "inline-block";
+    }, 8000);
+  }
+
+  function pollUpdateStatus() {
+    fetch("/update_status")
+    .then(r => r.json())
+    .then(data => {
+      if (!data.updating) return; // Not in updating mode yet or already done
+      
+      // Update FR status
+      let fr_status = document.getElementById("update_fr_status");
+      if (!data.fr_req) {
+        fr_status.innerText = "Offline (Skipped)";
+        fr_status.style.color = "#888";
+      } else if (data.fr_ack) {
+        fr_status.innerText = "OK (Updated)";
+        fr_status.style.color = "#10b981";
+      } else {
+        fr_status.innerText = "Updating...";
+        fr_status.style.color = "#f59e0b";
+      }
+      
+      // Update RL status
+      let rl_status = document.getElementById("update_rl_status");
+      if (!data.rl_req) {
+        rl_status.innerText = "Offline (Skipped)";
+        rl_status.style.color = "#888";
+      } else if (data.rl_ack) {
+        rl_status.innerText = "OK (Updated)";
+        rl_status.style.color = "#10b981";
+      } else {
+        rl_status.innerText = "Updating...";
+        rl_status.style.color = "#f59e0b";
+      }
+      
+      // Update RR status
+      let rr_status = document.getElementById("update_rr_status");
+      if (!data.rr_req) {
+        rr_status.innerText = "Offline (Skipped)";
+        rr_status.style.color = "#888";
+      } else if (data.rr_ack) {
+        rr_status.innerText = "OK (Updated)";
+        rr_status.style.color = "#10b981";
+      } else {
+        rr_status.innerText = "Updating...";
+        rr_status.style.color = "#f59e0b";
+      }
+      
+      if (data.all_done) {
+        clearInterval(pollInterval);
+        document.getElementById("updateSpinner").style.display = "none";
+        document.getElementById("updateStatusText").innerText = "All scales updated successfully! Rebooting system...";
+        setTimeout(() => {
+          location.reload();
+        }, 5000);
+      }
+    })
+    .catch(err => {
+      // If endpoint goes offline, it likely means the board is rebooting
+      console.log("Connection lost, check if master rebooted:", err);
+    });
+  }
+
+  function forceReboot() {
+    clearInterval(pollInterval);
+    document.getElementById("updateStatusText").innerText = "Forcing master reboot...";
+    fetch("/reboot")
+    .then(() => {
+      setTimeout(() => {
+        location.reload();
+      }, 5000);
+    })
+    .catch(() => {
+      setTimeout(() => {
+        location.reload();
+      }, 4000);
+    });
+  }
+
+  // --- Calibration Wizard Logic ---
+  function openCalWizard() {
+    showCalStep(1);
+    document.getElementById("calKnownWeight").value = "";
+    document.getElementById("calWeightLabel").innerText = useKg ? i18n[currentLang].kg : i18n[currentLang].lbs;
+    document.getElementById("calModal").style.display = "flex";
+  }
+
+  function closeCalWizard() {
+    document.getElementById("calModal").style.display = "none";
+  }
+
+  function showCalStep(step) {
+    document.querySelectorAll(".cal-step").forEach(el => el.style.display = "none");
+    document.getElementById("calStep" + step).style.display = "block";
+  }
+
+  function calWizardTare() {
+    fetch("/tare")
+    .then(r => {
+      if (r.ok) {
+        showCalStep(2);
+      } else {
+        alert("Zero failed. Check connection.");
+      }
+    })
+    .catch(err => alert("Error: " + err));
+  }
+
+  function calWizardSubmit() {
+    let pad = document.getElementById("calPad").value;
+    let weightVal = parseFloat(document.getElementById("calKnownWeight").value);
+    if (isNaN(weightVal) || weightVal <= 0) {
+      alert("Please enter a valid weight");
+      return;
+    }
+    let weightSend = weightVal;
+    if (useKg) {
+      weightSend = weightVal * 2.20462;
+    }
+    fetch("/calibrate?pad=" + pad + "&weight=" + weightSend)
+    .then(r => {
+      if (r.ok) {
+        showCalStep(3);
+      } else {
+        alert("Calibration failed.");
+      }
+    })
+    .catch(err => alert("Error: " + err));
+  }
+
+  applySettings();
+  // -------------------------
 
   function format(val){
     return val.toFixed(1);
@@ -729,6 +1388,19 @@ void handleRoot(){
       rightpct.innerText=d.rightpct
       crosspct.innerText=d.cross
       
+      document.getElementById("fl_wa").innerText = (d.fl_wa||0).toFixed(0);
+      document.getElementById("fl_wb").innerText = (d.fl_wb||0).toFixed(0);
+      document.getElementById("fl_wc").innerText = (d.fl_wc||0).toFixed(0);
+      document.getElementById("fr_wa").innerText = (d.fr_wa||0).toFixed(0);
+      document.getElementById("fr_wb").innerText = (d.fr_wb||0).toFixed(0);
+      document.getElementById("fr_wc").innerText = (d.fr_wc||0).toFixed(0);
+      document.getElementById("rl_wa").innerText = (d.rl_wa||0).toFixed(0);
+      document.getElementById("rl_wb").innerText = (d.rl_wb||0).toFixed(0);
+      document.getElementById("rl_wc").innerText = (d.rl_wc||0).toFixed(0);
+      document.getElementById("rr_wa").innerText = (d.rr_wa||0).toFixed(0);
+      document.getElementById("rr_wb").innerText = (d.rr_wb||0).toFixed(0);
+      document.getElementById("rr_wc").innerText = (d.rr_wc||0).toFixed(0);
+
       setStatus("fl_status",d.fl_online)
       setStatus("fr_status",d.fr_online)
       setStatus("rl_status",d.rl_online)
@@ -738,6 +1410,16 @@ void handleRoot(){
       setLock("fr_lock", d.fr_locked)
       setLock("rl_lock", d.rl_locked)
       setLock("rr_lock", d.rr_locked)
+
+      document.getElementById("fl_batt").innerText = d.fl_batt + "%";
+document.getElementById("fr_batt").innerText = d.fr_batt + "%";
+document.getElementById("rl_batt").innerText = d.rl_batt + "%";
+document.getElementById("rr_batt").innerText = d.rr_batt + "%";
+
+document.getElementById("fl_fill").style.width = d.fl_batt + "%";
+document.getElementById("fr_fill").style.width = d.fr_batt + "%";
+document.getElementById("rl_fill").style.width = d.rl_batt + "%";
+document.getElementById("rr_fill").style.width = d.rr_batt + "%";
 
     })
 
@@ -788,7 +1470,12 @@ void handleCalibrate(){
   float known = server.arg("weight").toFloat();
 
   if(pad=="FL"){
-    float reading = scale.read_average(20);
+    float reading = 0;
+    if (hxCount == 1) {
+      reading = scaleA.read_average(20);
+    } else {
+      reading = scaleA.read_average(20) + scaleB.read_average(20) + scaleC.read_average(20);
+    }
     float net = reading - FL_offset;
 
     FL_cal = net / known;
@@ -822,6 +1509,31 @@ void handleCalibrate(){
 
 void onReceive(const esp_now_recv_info *info, const uint8_t *data, int len){
 
+  if (len == 2 && data[0] == 'O' && data[1] == 'K') {
+    if (FR_mac_set && memcmp(info->src_addr, FR_mac, 6) == 0) {
+      FR_ack_received = true;
+      Serial.println("ACK received from FR");
+    } else if (RL_mac_set && memcmp(info->src_addr, RL_mac, 6) == 0) {
+      RL_ack_received = true;
+      Serial.println("ACK received from RL");
+    } else if (RR_mac_set && memcmp(info->src_addr, RR_mac, 6) == 0) {
+      RR_ack_received = true;
+      Serial.println("ACK received from RR");
+    }
+    
+    if (is_updating) {
+      bool all_done = (!FR_ack_required || FR_ack_received) &&
+                      (!RL_ack_required || RL_ack_received) &&
+                      (!RR_ack_required || RR_ack_received);
+      if (all_done) {
+        Serial.println("All required ACKs received. Rebooting master in 1.5 seconds.");
+        shouldRestart = true;
+        restartTime = millis() + 1500;
+      }
+    }
+    return;
+  }
+
   if(len != sizeof(ScaleData)){
     Serial.println("BAD PACKET SIZE");
     return;
@@ -840,6 +1552,14 @@ void onReceive(const esp_now_recv_info *info, const uint8_t *data, int len){
   }
 
   if(strcmp(incomingData.pad,"FR")==0){
+    if (!FR_mac_set) {
+      memcpy(FR_mac, info->src_addr, 6);
+      FR_mac_set = true;
+      Serial.printf("Learned FR MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", FR_mac[0], FR_mac[1], FR_mac[2], FR_mac[3], FR_mac[4], FR_mac[5]);
+    }
+    FR_wA = incomingData.wA;
+    FR_wB = incomingData.wB;
+    FR_wC = incomingData.wC;
     FR_raw = incomingData.weight;
     float FR_new = (FR_raw - FR_offset) / FR_cal;
     applyStability(FR_new, lastFR, FR_locked);
@@ -855,6 +1575,14 @@ void onReceive(const esp_now_recv_info *info, const uint8_t *data, int len){
   }
 
   if(strcmp(incomingData.pad,"RL")==0){
+    if (!RL_mac_set) {
+      memcpy(RL_mac, info->src_addr, 6);
+      RL_mac_set = true;
+      Serial.printf("Learned RL MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", RL_mac[0], RL_mac[1], RL_mac[2], RL_mac[3], RL_mac[4], RL_mac[5]);
+    }
+    RL_wA = incomingData.wA;
+    RL_wB = incomingData.wB;
+    RL_wC = incomingData.wC;
     RL_raw = incomingData.weight;
     float RL_new = (RL_raw - RL_offset) / RL_cal;
     applyStability(RL_new, lastRL, RL_locked);
@@ -870,6 +1598,14 @@ void onReceive(const esp_now_recv_info *info, const uint8_t *data, int len){
   }
 
   if(strcmp(incomingData.pad,"RR")==0){
+    if (!RR_mac_set) {
+      memcpy(RR_mac, info->src_addr, 6);
+      RR_mac_set = true;
+      Serial.printf("Learned RR MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", RR_mac[0], RR_mac[1], RR_mac[2], RR_mac[3], RR_mac[4], RR_mac[5]);
+    }
+    RR_wA = incomingData.wA;
+    RR_wB = incomingData.wB;
+    RR_wC = incomingData.wC;
     RR_raw = incomingData.weight;
     float RR_new = (RR_raw - RR_offset) / RR_cal;
     applyStability(RR_new, lastRR, RR_locked);
@@ -886,17 +1622,88 @@ void onReceive(const esp_now_recv_info *info, const uint8_t *data, int len){
 
 }
 
+void handleWifiConfig(){
+  String ssid = prefs.getString("wifi_ssid", "Race_Scales");
+  String pass = prefs.getString("wifi_pass", "123456789");
+  int hx = prefs.getInt("hx_count", 3);
+  String json = "{\"ssid\":\"" + ssid + "\",\"pass\":\"" + pass + "\",\"hx_count\":" + String(hx) + "}";
+  server.send(200, "application/json", json);
+}
+
+// Handle saving WiFi and HX711 count settings, then broadcast the new count to children
+void handleSaveWifi(){
+  String ssid = server.arg("ssid");
+  String pass = server.arg("pass");
+  String hxVal = server.arg("hx_count");
+  if(ssid.length() > 0 && pass.length() >= 8){
+    prefs.putString("wifi_ssid", ssid);
+    prefs.putString("wifi_pass", pass);
+    
+    int hx = hxCount;
+    if(hxVal.length() > 0){
+      hx = hxVal.toInt();
+      if(hx == 1 || hx == 3){
+        prefs.putInt("hx_count", hx);
+        hxCount = hx;
+      }
+    }
+
+    bool FR_online = (millis() - FR_lastSeen) < 3000;
+    bool RL_online = (millis() - RL_lastSeen) < 3000;
+    bool RR_online = (millis() - RR_lastSeen) < 3000;
+
+    is_updating = true;
+    FR_ack_required = FR_online;
+    RL_ack_required = RL_online;
+    RR_ack_required = RR_online;
+    
+    FR_ack_received = false;
+    RL_ack_received = false;
+    RR_ack_received = false;
+
+    // Send broadcast config update
+    uint8_t payload[2] = {'C', (uint8_t)hx};
+    uint8_t broadcastAddr[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+    esp_now_send(broadcastAddr, payload, sizeof(payload));
+
+    bool any_online = FR_online || RL_online || RR_online;
+    if (!any_online) {
+      // No children online, reboot master after a short delay
+      shouldRestart = true;
+      restartTime = millis() + 2000;
+    }
+
+    String json = "{\"status\":\"updating\",";
+    json += "\"fr_online\":" + String(FR_online ? "true" : "false") + ",";
+    json += "\"rl_online\":" + String(RL_online ? "true" : "false") + ",";
+    json += "\"rr_online\":" + String(RR_online ? "true" : "false") + "}";
+    server.send(200, "application/json", json);
+  } else {
+    server.send(400, "text/plain", "Invalid parameters. Password must be at least 8 characters.");
+  }
+}
+
+
 void setup(){
 
   Serial.begin(115200);
 
-  scale.begin(HX_DT, HX_SCK);
+  prefs.begin("scales");
+  hxCount = prefs.getInt("hx_count", 3);
+
+  scaleA.begin(HX_DT_A, HX_SCK_A);
+  if(hxCount == 3){
+    scaleB.begin(HX_DT_B, HX_SCK_B);
+    scaleC.begin(HX_DT_C, HX_SCK_C);
+  }
 
   Serial.println("HX711 optional - will detect automatically");
 
-  WiFi.mode(WIFI_AP_STA);
+  String ssid = prefs.getString("wifi_ssid", "Race_Scales");
+  String pass = prefs.getString("wifi_pass", "123456789");
 
-  WiFi.softAP("DIY_Race_Scales","12345678",1);
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.softAP(ssid.c_str(), pass.c_str(), 1);
 
   WiFi.setSleep(false);
 
@@ -912,18 +1719,51 @@ void setup(){
   }
   esp_now_register_recv_cb(onReceive);
 
+  // Add broadcast peer
+  esp_now_peer_info_t peerInfo = {};
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memset(peerInfo.peer_addr, 0xFF, 6);
+  peerInfo.channel = 1;
+  peerInfo.encrypt = false;
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add broadcast peer");
+  }
+
   server.on("/",handleRoot);
   server.on("/data",handleData);
   server.on("/tare",handleTare);
   server.on("/calibrate",handleCalibrate);
+  server.on("/wifi_config", handleWifiConfig);
+  server.on("/save_wifi", handleSaveWifi);
+  server.on("/update_status", [](){
+    bool all_done = (!FR_ack_required || FR_ack_received) &&
+                    (!RL_ack_required || RL_ack_received) &&
+                    (!RR_ack_required || RR_ack_received);
+    String json = "{";
+    json += "\"updating\":" + String(is_updating ? "true" : "false") + ",";
+    json += "\"fr_req\":" + String(FR_ack_required ? "true" : "false") + ",";
+    json += "\"fr_ack\":" + String(FR_ack_received ? "true" : "false") + ",";
+    json += "\"rl_req\":" + String(RL_ack_required ? "true" : "false") + ",";
+    json += "\"rl_ack\":" + String(RL_ack_received ? "true" : "false") + ",";
+    json += "\"rr_req\":" + String(RR_ack_required ? "true" : "false") + ",";
+    json += "\"rr_ack\":" + String(RR_ack_received ? "true" : "false") + ",";
+    json += "\"all_done\":" + String(all_done ? "true" : "false");
+    json += "}";
+    server.send(200, "application/json", json);
+  });
+  server.on("/reboot", [](){
+    server.send(200, "text/plain", "REBOOTING");
+    delay(500);
+    ESP.restart();
+  });
   server.on("/reset", [](){
     prefs.begin("scales", false);
     prefs.clear();
     prefs.end();
     server.send(200, "text/plain", "RESET DONE");
+    delay(1000);
+    ESP.restart();
   });
-
-  prefs.begin("scales");
 
   FL_cal = prefs.getFloat("FL_cal",1.0);
   FR_cal = prefs.getFloat("FR_cal",1.0);
@@ -936,16 +1776,26 @@ void setup(){
 }
 
 void loop(){
-  Serial.println("HX711 detected");
   /* detect scale if plugged in later */
   if(!scaleInitialized && millis() - lastScaleCheck > 1000){
     lastScaleCheck = millis();
-    if(scale.is_ready()){
+    bool ready = false;
+    if(hxCount == 1){
+      ready = scaleA.is_ready();
+    } else {
+      ready = scaleA.is_ready() && scaleB.is_ready() && scaleC.is_ready();
+    }
+    
+    if(ready){
       Serial.println("HX711 detected");
 
       if(FL_offset == 0){   
         delay(500);
-        FL_offset = scale.read_average(20);
+        if(hxCount == 1){
+          FL_offset = scaleA.read_average(20);
+        } else {
+          FL_offset = scaleA.read_average(20) + scaleB.read_average(20) + scaleC.read_average(20);
+        }
         prefs.putFloat("FL_offset", FL_offset);
       }
 
@@ -955,8 +1805,29 @@ void loop(){
   }
 
   /* read FL scale */
-  if(scalePresent && scale.is_ready()){
-    float raw = scale.read_average(10);
+  bool canRead = false;
+  if(hxCount == 1){
+    canRead = scalePresent && scaleA.is_ready();
+  } else {
+    canRead = scalePresent && scaleA.is_ready() && scaleB.is_ready() && scaleC.is_ready();
+  }
+
+  if(canRead){
+    float rawA = scaleA.read_average(10);
+    float raw = 0;
+    if(hxCount == 1){
+      raw = rawA;
+      FL_wA = rawA;
+      FL_wB = 0;
+      FL_wC = 0;
+    } else {
+      float rawB = scaleB.read_average(10);
+      float rawC = scaleC.read_average(10);
+      raw = rawA + rawB + rawC;
+      FL_wA = rawA;
+      FL_wB = rawB;
+      FL_wC = rawC;
+    }
     Serial.println(raw);
     float FL_new = (raw - FL_offset) / FL_cal;
     applyStability(FL_new, lastFL, FL_locked);
@@ -969,11 +1840,15 @@ void loop(){
     FL = round(FL * 2) / 2.0;
   }
 
-  // int raw = analogRead(FL_BAT_PIN);\
-  // float voltage = (raw / 4095.0) * 3.3 * 2.0;  // *2 for voltage divider
-  // FL_batt = voltage;
+   int raw = analogRead(FL_BAT_PIN);\
+   float voltage = (raw / 4095.0) * 3.3 * 2.0;  // *2 for voltage divider
+   FL_batt = voltage;
 
   server.handleClient();
+
+  if (shouldRestart && millis() > restartTime) {
+    ESP.restart();
+  }
 
   delay(1);
 
