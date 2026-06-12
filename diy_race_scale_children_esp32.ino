@@ -1,3 +1,4 @@
+
 /*
 traviscea DIY Race Scales – Version 1.0
 Copyright (c) 2026 Travis Way
@@ -19,7 +20,7 @@ Copyright (c) 2026 Travis Way
 #define MAX_HX711 3
 
 /* ---------- PAD ID ---------- */
-#define PAD_ID "RL"
+#define PAD_ID "RR"
 
 /* ---------- HX711 PINS ---------- */
 #define HX_DT_A 4
@@ -53,6 +54,7 @@ typedef struct {
 
 ScaleData data;
 
+
 /* ---------- MASTER MAC ADDRESS ---------- */
 /* Replace with MAC of your ESP32-S3
 Example, if your brain/main esp32 outputs: AP MAC: 4E:DD:76:6F:A5:45
@@ -60,8 +62,10 @@ then your masterAddress =
 const uint8_t masterAddress[] = {0x4E,0xDD,0x76,0x6F,0xA5,0x45};
 uint8_t masterMac[6] = {0x4E,0xDD,0x76,0x6F,0xA5,0x45};
 */
-const uint8_t masterAddress[] = {0x4E,0xDD,0x76,0x6F,0xA5,0x45};
-uint8_t masterMac[6] = {0x4E,0xDD,0x76,0x6F,0xA5,0x45}; // Defaults to masterAddress
+
+/* ---------- MASTER MAC ADDRESS ---------- */
+const uint8_t masterAddress[] = {0x30,0xC6,0xF7,0x31,0x9A,0xC5};
+uint8_t masterMac[6] = {0x30,0xC6,0xF7,0x31,0x9A,0xC5}; // Defaults to masterAddress
 
 // Volatile flags for config changes (handled inside loop to avoid stack/WDT crash in system callbacks)
 volatile bool pendingConfigChange = false;
@@ -179,6 +183,28 @@ void setup() {
 
 /* ---------- LOOP ---------- */
 void loop() {
+  // Handle pending configuration changes from master
+  if (pendingConfigChange) {
+    pendingConfigChange = false;
+    hxCount = pendingHxCount;
+    prefs.putUChar("hxCount", hxCount);
+    
+    // Reset offset so it auto-tares with the new sensor count on reboot
+    offset = 0;
+    prefs.putFloat("offset", 0);
+    
+    Serial.printf("Config changed! HX711 Count set to %d. Sending ACK...\n", hxCount);
+    
+    // Send ACK multiple times to ensure master gets it
+    for (int i = 0; i < 5; i++) {
+      sendAck();
+      delay(100);
+    }
+    
+    Serial.println("Rebooting child to apply new configuration cleanly...");
+    delay(500);
+    ESP.restart();
+  }
 
   /* SCALE READ */
   if (hxCount == 1) {
