@@ -724,88 +724,304 @@ void handleRoot(){
       </linearGradient>
     </defs>
 
-    <!-- Classic Dual Exhaust Pipes -->
-    <rect x="92" y="276" width="6" height="12" rx="1.5" fill="#7f8c8d"/>
-    <rect x="122" y="276" width="6" height="12" rx="1.5" fill="#7f8c8d"/>
+    <!-- Group 1: Simple (Default) -->
+    <g id="car_style_default" class="car-style-group" style="display:none;">
+      <path fill="var(--accent)" stroke="#111" stroke-width="3" d="
+        M85 10
+        L135 10
+        Q155 20 160 50
+        L165 100
+        L165 200
+        L160 250
+        Q155 280 135 290
+        L85 290
+        Q65 280 60 250
+        L55 200
+        L55 100
+        L60 50
+        Q65 20 85 10
+        Z"/>
+      <rect x="75" y="55" width="70" height="40" rx="10" fill="#2f2f2f"/>
+      <rect x="75" y="215" width="70" height="40" rx="10" fill="#2f2f2f"/>
+      <polygon points="55,120 45,130 55,140" fill="var(--accent)"/>
+      <polygon points="165,120 175,130 165,140" fill="var(--accent)"/>
+    </g>
 
-    <!-- Wheels (Tires & Classic Hubcaps) -->
-    <!-- Front Left Wheel -->
-    <rect x="62" y="56" width="10" height="30" rx="3" fill="#1a1a1a"/>
-    <circle cx="67" cy="71" r="4.5" fill="var(--accent)" stroke="#fff" stroke-width="0.5"/>
-    
-    <!-- Front Right Wheel -->
-    <rect x="148" y="56" width="10" height="30" rx="3" fill="#1a1a1a"/>
-    <circle cx="153" cy="71" r="4.5" fill="var(--accent)" stroke="#fff" stroke-width="0.5"/>
-    
-    <!-- Rear Left Wheel -->
-    <rect x="54" y="200" width="12" height="36" rx="4" fill="#1a1a1a"/>
-    <circle cx="60" cy="218" r="5.5" fill="var(--accent)" stroke="#fff" stroke-width="0.5"/>
-    
-    <!-- Rear Right Wheel -->
-    <rect x="154" y="200" width="12" height="36" rx="4" fill="#1a1a1a"/>
-    <circle cx="160" cy="218" r="5.5" fill="var(--accent)" stroke="#fff" stroke-width="0.5"/>
+    <!-- Group 2: Modern Supercar -->
+    <g id="car_style_supercar" class="car-style-group" style="display:none;">
+      <!-- Wheels (Tires & Rims) -->
+      <rect x="49" y="46" width="12" height="34" rx="3" fill="#121212"/>
+      <rect x="52" y="52" width="6" height="22" rx="2" fill="#555"/>
+      <rect x="159" y="46" width="12" height="34" rx="3" fill="#121212"/>
+      <rect x="162" y="52" width="6" height="22" rx="2" fill="#555"/>
+      <rect x="42" y="206" width="16" height="40" rx="4" fill="#121212"/>
+      <rect x="45" y="214" width="8" height="24" rx="2" fill="#555"/>
+      <rect x="162" y="206" width="16" height="40" rx="4" fill="#121212"/>
+      <rect x="167" y="214" width="8" height="24" rx="2" fill="#555"/>
 
-    <!-- Classic Bullet Side Mirrors -->
-    <!-- Left Stalk and Mirror -->
-    <line x1="68" y1="110" x2="74" y2="114" stroke="var(--accent)" stroke-width="1.5"/>
-    <circle cx="68" cy="110" r="4.5" fill="var(--accent)" stroke="#111" stroke-width="0.5"/>
-    <!-- Right Stalk and Mirror -->
-    <line x1="152" y1="110" x2="146" y2="114" stroke="var(--accent)" stroke-width="1.5"/>
-    <circle cx="152" cy="110" r="4.5" fill="var(--accent)" stroke="#111" stroke-width="0.5"/>
+      <!-- Mirrors -->
+      <path d="M 68, 102 C 54, 99 52, 92 56, 90 C 60, 89 64, 95 66, 98 Z" fill="var(--accent)" stroke="#111" stroke-width="1"/>
+      <path d="M 152, 102 C 166, 99 168, 92 164, 90 C 160, 89 156, 95 154, 98 Z" fill="var(--accent)" stroke="#111" stroke-width="1"/>
 
-    <!-- Main Car Body -->
-    <path fill="url(#bodyGrad)" stroke="var(--accent)" stroke-width="2.5" d="
-      M 110, 35
-      C 122,35 136,37 142,42
-      C 148,47 150,58 150,70
-      C 150,85 148,105 146,130
-      C 144,155 144,180 148,200
-      C 152,215 158,225 158,242
-      C 158,258 152,270 140,275
-      C 130,278 120,278 110,278
-      C 100,278 90,278 80,275
-      C 68,270 62,258 62,242
-      C 62,225 68,215 72,200
-      C 76,180 76,155 74,130
-      C 72,105 70,85 70,70
-      C 70,58 72,47 78,42
-      C 84,37 98,35 110,35
-      Z"/>
+      <!-- Body -->
+      <path fill="url(#bodyGrad)" stroke="var(--accent)" stroke-width="2.5" d="
+        M 110, 20
+        C 125,20 145,22 152,30
+        C 160,38 165,50 165,65
+        C 165,80 160,95 154,105
+        C 150,118 148,135 152,160
+        C 156,180 172,195 172,225
+        C 172,242 166,260 156,272
+        C 148,280 135,282 110,282
+        C 85,282 72,280 64,272
+        C 54,260 48,242 48,225
+        C 48,195 64,180 68,160
+        C 72,135 70,118 66,105
+        C 60,95 55,80 55,65
+        C 55,50 60,38 68,30
+        C 75,22 95,20 110,20
+        Z"/>
 
-    <!-- Classic Racing/Hood Stripes -->
-    <rect x="99" y="36" width="4" height="78" fill="var(--accent)" opacity="0.35"/>
-    <rect x="117" y="36" width="4" height="78" fill="var(--accent)" opacity="0.35"/>
+      <!-- Hood Vents -->
+      <path d="M 92,52 L 98,42 L 100,52 Z" fill="#121212" stroke="#2c2e35" stroke-width="1"/>
+      <path d="M 128,52 L 122,42 L 120,52 Z" fill="#121212" stroke="#2c2e35" stroke-width="1"/>
 
-    <!-- Classic Round Headlights -->
-    <circle cx="80" cy="52" r="7.5" fill="#fffae0" stroke="var(--accent)" stroke-width="1.5"/>
-    <circle cx="140" cy="52" r="7.5" fill="#fffae0" stroke="var(--accent)" stroke-width="1.5"/>
+      <!-- LED Headlights -->
+      <path d="M 72, 38 L 68, 52 L 72, 60" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 148, 38 L 152, 52 L 148, 60" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 
-    <!-- Classic Cabin Glass (Windshield, Sides, Rear Window) -->
-    <path fill="url(#glassGrad)" stroke="#374151" stroke-width="1.5" d="
-      M 86, 115
-      C 110, 110 110, 110 134, 115
-      C 138, 140 138, 185 132, 198
-      C 110, 202 110, 202 88, 198
-      C 82, 185 82, 140 86, 115
-      Z"/>
-    <!-- Windshield Divider Frame -->
-    <path d="M 86, 138 C 110, 134 110, 134 134, 138" stroke="#4b5563" stroke-width="1.5" fill="none"/>
-    <!-- Rear Glass Window -->
-    <path fill="#101114" stroke="#2c2e35" stroke-width="1" d="
-      M 94, 172
-      C 110, 169 110, 169 126, 172
-      C 124, 192 120, 195 110, 196
-      C 100, 195 96, 192 94, 172
-      Z"/>
+      <!-- Glass Canopy -->
+      <path fill="url(#glassGrad)" stroke="#374151" stroke-width="1.5" d="
+        M 110, 80
+        C 125,80 136,92 136,110
+        C 136,135 130,165 124,195
+        C 120,215 116,215 110,215
+        C 104,215 100,215 96,195
+        C 90,165 84,135 84,110
+        C 84,92 95,80 110,80
+        Z"/>
+      <path d="M 90,105 C 105,88 115,88 130,105 C 122,112 112,114 90,105 Z" fill="rgba(255,255,255,0.12)"/>
 
-    <!-- Glossy Windshield Shine -->
-    <path d="M 90, 126 C 105, 115 115, 115 130, 126 C 124, 131 114, 132 90, 126 Z" fill="rgba(255, 255, 255, 0.12)"/>
+      <!-- Engine Cover Carbon Accent & Vents -->
+      <path d="M 96,195 L 124,195 L 120,245 L 100,245 Z" fill="#141518" stroke="#24262f" stroke-width="1.5"/>
+      <line x1="102" y1="205" x2="118" y2="205" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+      <line x1="104" y1="218" x2="116" y2="218" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+      <line x1="106" y1="230" x2="114" y2="230" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
 
-    <!-- Classic Front Bumper (Chrome Accent) -->
-    <path d="M 78, 42 Q 110, 37 142, 42" stroke="var(--accent)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <!-- Rear LED Lightbar -->
+      <path d="M 85, 276 Q 110, 278 135, 276" stroke="#ef4444" stroke-width="2.5" fill="none" stroke-linecap="round"/>
 
-    <!-- Classic Rear Bumper (Chrome Accent) -->
-    <path d="M 74, 274 Q 110, 279 146, 274" stroke="var(--accent)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <!-- Active Aero Wing / GT3 Rear Spoiler -->
+      <line x1="94" y1="252" x2="94" y2="268" stroke="#374151" stroke-width="2"/>
+      <line x1="126" y1="252" x2="126" y2="268" stroke="#374151" stroke-width="2"/>
+      <path d="M 64,266 C 88,270 132,270 156,266" fill="none" stroke="var(--accent)" stroke-width="4.5" stroke-linecap="round"/>
+      <line x1="63" y1="260" x2="65" y2="272" stroke="#121212" stroke-width="3" stroke-linecap="round"/>
+      <line x1="157" y1="260" x2="155" y2="272" stroke="#121212" stroke-width="3" stroke-linecap="round"/>
+    </g>
+
+    <!-- Group 3: Classic Sports Car (Datsun 240Z Style) -->
+    <g id="car_style_classic" class="car-style-group" style="display:none;">
+      <!-- Tires visible under the wheel arches -->
+      <rect x="63" y="55" width="8" height="30" rx="2" fill="#121212" opacity="0.4"/>
+      <rect x="149" y="55" width="8" height="30" rx="2" fill="#121212" opacity="0.4"/>
+      <rect x="62" y="202" width="10" height="34" rx="3" fill="#121212" opacity="0.4"/>
+      <rect x="148" y="202" width="10" height="34" rx="3" fill="#121212" opacity="0.4"/>
+
+      <!-- Fender Mirrors (Classic Japanese Placement) -->
+      <!-- Left Fender Mirror -->
+      <line x1="69" y1="64" x2="64" y2="60" stroke="var(--accent)" stroke-width="1.5"/>
+      <ellipse cx="62" cy="58" rx="3.5" ry="2" fill="var(--accent)" transform="rotate(-20 62 58)"/>
+      <!-- Right Fender Mirror -->
+      <line x1="151" y1="64" x2="156" y2="60" stroke="var(--accent)" stroke-width="1.5"/>
+      <ellipse cx="158" cy="58" rx="3.5" ry="2" fill="var(--accent)" transform="rotate(20 158 58)"/>
+
+      <!-- Main Body Contour -->
+      <path fill="var(--bg-panel)" stroke="var(--accent)" stroke-width="2.5" d="
+        M 110, 25
+        C 125,25 142,28 146,35
+        C 150,42 153,52 153,65
+        C 153,90 151,90 151,90
+        C 150,110 150,140 150,170
+        C 150,170 154,200 154,215
+        C 154,230 152,245 152,245
+        C 152,260 148,270 144,274
+        C 134,275 120,275 110,275
+        C 100,275 86,275 76,274
+        C 72,270 68,260 68,245
+        C 68,245 66,230 66,215
+        C 66,200 70,170 70,170
+        C 70,140 70,110 70,90
+        C 70,90 67,90 67,65
+        C 67,52 70,42 74,35
+        C 78,28 95,25 110,25
+        Z"/>
+
+      <!-- Internal Detail Lines (CAD/Blueprint Style) -->
+      <g stroke="var(--text-main)" stroke-width="1.2" fill="none" opacity="0.45" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Windshield -->
+        <path d="M 76, 115 C 110, 110 110, 110 144, 115"/>
+        <path d="M 80, 138 C 110, 134 110, 134 140, 138"/>
+        <line x1="76" y1="115" x2="80" y2="138"/>
+        <line x1="144" y1="115" x2="140" y2="138"/>
+
+        <!-- Windshield Wipers -->
+        <line x1="86" y1="114" x2="98" y2="111" stroke-width="1"/>
+        <line x1="112" y1="113" x2="124" y2="110" stroke-width="1"/>
+
+        <!-- Side Glass & Roof rails -->
+        <path d="M 80, 138 C 82, 160 84, 185 86, 205"/>
+        <path d="M 140, 138 C 138, 160 136, 185 136, 205"/>
+        <path d="M 72, 120 C 72, 155 72, 185 74, 206"/>
+        <path d="M 148, 120 C 148, 155 148, 185 146, 206"/>
+
+        <!-- Hood Crease (Power Bulge) -->
+        <path d="M 98, 100 L 102, 52 C 105, 45 115, 45 118, 52 L 122, 100"/>
+        
+        <!-- Cowl Cooling Slat Vents -->
+        <rect x="94" y="104" width="6" height="8" rx="0.5" stroke-width="0.8"/>
+        <line x1="94" y1="108" x2="100" y2="108" stroke-width="0.8"/>
+        <rect x="120" y="104" width="6" height="8" rx="0.5" stroke-width="0.8"/>
+        <line x1="120" y1="108" x2="126" y2="108" stroke-width="0.8"/>
+
+        <!-- Door Seams -->
+        <line x1="70" y1="122" x2="76" y2="122"/>
+        <line x1="150" y1="122" x2="144" y2="122"/>
+        <line x1="70" y1="202" x2="86" y2="202"/>
+        <line x1="150" y1="202" x2="136" y2="202"/>
+
+        <!-- Rear Glass Hatch Window -->
+        <rect x="84" y="208" width="52" height="42" rx="4" stroke-width="1.2"/>
+        
+        <!-- Hatch Panel Seams -->
+        <path d="M 80, 205 L 76, 258"/>
+        <path d="M 140, 205 L 144, 258"/>
+        <path d="M 76, 258 C 110, 260 110, 260 144, 258"/>
+
+        <!-- Fuel Cap (Right side, classic round) -->
+        <circle cx="149" cy="232" r="3.5"/>
+      </g>
+
+      <!-- Recessed Sugar-Scoop Round Headlights -->
+      <g stroke-linecap="round" stroke-linejoin="round">
+        <path d="M 86, 32 C 76, 34 70, 42 72, 54 C 74, 58 82, 56 86, 48 Z" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <path d="M 134, 32 C 144, 34 150, 42 148, 54 C 146, 58 138, 56 134, 48 Z" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <circle cx="79" cy="46" r="4.5" fill="#fffae0" stroke="var(--accent)" stroke-width="1.2"/>
+        <circle cx="141" cy="46" r="4.5" fill="#fffae0" stroke="var(--accent)" stroke-width="1.2"/>
+      </g>
+
+      <!-- Rear Bumper Lines -->
+      <line x1="74" y1="274" x2="146" y2="274" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round"/>
+    </g>
+
+    <!-- Group 4: Blueprint Hatchback -->
+    <g id="car_style_hatchback" class="car-style-group" style="display:none;">
+      <path fill="var(--bg-panel)" stroke="var(--accent)" stroke-width="2.5" d="
+        M 110, 25
+        C 128,25 148,27 154,34
+        C 158,39 160,48 160,56
+        C 160,75 159,100 159,130
+        C 159,160 160,200 160,240
+        C 160,252 158,261 154,266
+        C 148,273 128,275 110,275
+        C 92,275 72,273 66,266
+        C 62,261 60,252 60,240
+        C 60,160 61,160 61,130
+        C 61,100 60,75 60,56
+        C 60,48 62,39 66,34
+        C 72,27 92,25 110,25
+        Z"/>
+      <path d="M 72, 98 C 62, 95 56, 88 58, 86 C 60, 84 66, 92 72, 94 Z" fill="var(--accent)" stroke="var(--accent)" stroke-width="1" opacity="0.8"/>
+      <path d="M 148, 98 C 158, 95 164, 88 162, 86 C 160, 84 154, 92 148, 94 Z" fill="var(--accent)" stroke="var(--accent)" stroke-width="1" opacity="0.8"/>
+
+      <g stroke="var(--text-main)" stroke-width="1.2" fill="none" opacity="0.45" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M 72, 90 C 110, 85 110, 85 148, 90"/>
+        <path d="M 76, 115 C 110, 112 110, 112 144, 115"/>
+        <line x1="72" y1="90" x2="76" y2="115"/>
+        <line x1="148" y1="90" x2="144" y2="115"/>
+        <path d="M 76, 115 C 78, 140 78, 175 78, 205"/>
+        <path d="M 144, 115 C 142, 140 142, 175 142, 205"/>
+        <path d="M 64, 95 C 65, 130 65, 175 64, 210"/>
+        <path d="M 156, 95 C 155, 130 155, 175 156, 210"/>
+        <path d="M 78, 205 C 110, 208 110, 208 142, 205"/>
+        <path d="M 70, 235 C 110, 238 110, 238 150, 235"/>
+        <line x1="78" y1="205" x2="70" y2="235"/>
+        <line x1="142" y1="205" x2="150" y2="235"/>
+        <path d="M 74, 90 C 72, 60 74, 40 82, 32"/>
+        <path d="M 146, 90 C 148, 60 146, 40 138, 32"/>
+        <path d="M 82, 32 C 110, 30 110, 30 138, 32"/>
+        <line x1="110" y1="25" x2="110" y2="30"/>
+        <line x1="61" y1="135" x2="78" y2="135"/>
+        <line x1="159" y1="135" x2="142" y2="135"/>
+        <line x1="64" y1="162" x2="78" y2="162"/>
+        <line x1="156" y1="162" x2="142" y2="162"/>
+        <line x1="61" y1="190" x2="78" y2="190"/>
+        <line x1="159" y1="190" x2="142" y2="190"/>
+        <path d="M 68, 264 C 74, 258 74, 250 70, 235"/>
+        <path d="M 152, 264 C 146, 258 146, 250 150, 235"/>
+        <path d="M 68, 264 C 110, 268 110, 268 152, 264"/>
+      </g>
+      <g stroke-linecap="round" stroke-linejoin="round">
+        <path d="M 64, 34 C 68, 36 72, 42 70, 48 C 66, 46 64, 40 64, 34 Z" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <path d="M 156, 34 C 152, 36 148, 42 150, 48 C 154, 46 156, 40 156, 34 Z" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <path d="M 62, 252 C 65, 255 70, 258 68, 263 C 64, 262 62, 258 62, 252 Z" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+        <path d="M 158, 252 C 155, 255 150, 258 152, 263 C 156, 262 158, 258 158, 252 Z" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      </g>
+    </g>
+
+    <!-- Group 5: Blueprint Coupe -->
+    <g id="car_style_coupe" class="car-style-group" style="display:none;">
+      <path fill="var(--bg-panel)" stroke="var(--accent)" stroke-width="2.5" d="
+        M 110, 25
+        C 126,25 142,27 148,34
+        C 154,39 158,48 158,56
+        C 158,75 152,100 148,135
+        C 146,160 162,200 162,230
+        C 162,246 156,262 146,270
+        C 136,275 124,275 110,275
+        C 96,275 84,275 74,270
+        C 64,262 58,246 58,230
+        C 58,200 74,160 72,135
+        C 68,100 62,75 62,56
+        C 62,48 66,39 72,34
+        C 78,27 94,25 110,25
+        Z"/>
+      <path d="M 72, 98 C 62, 95 56, 88 58, 86 C 60, 84 66, 92 72, 94 Z" fill="var(--accent)" stroke="var(--accent)" stroke-width="1" opacity="0.8"/>
+      <path d="M 148, 98 C 158, 95 164, 88 162, 86 C 160, 84 154, 92 148, 94 Z" fill="var(--accent)" stroke="var(--accent)" stroke-width="1" opacity="0.8"/>
+
+      <g stroke="var(--text-main)" stroke-width="1.2" fill="none" opacity="0.45" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M 74, 100 C 110, 95 110, 95 146, 100"/>
+        <path d="M 78, 122 C 110, 118 110, 118 142, 122"/>
+        <line x1="74" y1="100" x2="78" y2="122"/>
+        <line x1="146" y1="100" x2="142" y2="122"/>
+        <path d="M 78, 122 C 80, 145 82, 175 84, 195"/>
+        <path d="M 142, 122 C 140, 145 138, 175 136, 195"/>
+        <path d="M 68, 105 C 68, 140 68, 175 66, 200"/>
+        <path d="M 152, 105 C 152, 140 152, 175 154, 200"/>
+        <path d="M 84, 195 C 110, 198 110, 198 136, 195"/>
+        <path d="M 76, 230 C 110, 234 110, 234 144, 230"/>
+        <line x1="84" y1="195" x2="76" y2="230"/>
+        <line x1="136" y1="195" x2="144" y2="230"/>
+        <path d="M 76, 100 C 74, 65 76, 42 84, 33"/>
+        <path d="M 144, 100 C 146, 65 144, 42 136, 33"/>
+        <path d="M 84, 33 C 110, 31 110, 31 136, 33"/>
+        <line x1="110" y1="25" x2="110" y2="31"/>
+        <line x1="63" y1="115" x2="75" y2="115"/>
+        <line x1="157" y1="115" x2="145" y2="115"/>
+        <line x1="65" y1="155" x2="81" y2="155"/>
+        <line x1="155" y1="155" x2="139" y2="155"/>
+        <line x1="67" y1="195" x2="84" y2="195"/>
+        <line x1="153" y1="195" x2="136" y2="195"/>
+        <path d="M 72, 266 C 78, 255 78, 245 76, 230"/>
+        <path d="M 148, 266 C 142, 255 142, 245 144, 230"/>
+        <path d="M 72, 266 C 110, 270 110, 270 148, 266"/>
+      </g>
+      <g stroke-linecap="round" stroke-linejoin="round">
+        <path d="M 66, 35 C 70, 37 74, 43 72, 49 C 68, 47 66, 41 66, 35 Z" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <path d="M 154, 35 C 150, 37 146, 43 148, 49 C 152, 47 154, 41 154, 35 Z" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <path d="M 62, 254 C 66, 256 72, 258 70, 262" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+        <path d="M 158, 254 C 154, 256 148, 258 150, 262" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      </g>
+    </g>
 
     <!-- CG (Center of Gravity) Indicator Symbol -->
     <g id="cgSymbol" transform="translate(110, 150)" style="opacity: 0.3;">
@@ -920,6 +1136,17 @@ void handleRoot(){
           <option value="en">English</option>
           <option value="de">Deutsch</option>
           <option value="es">Español</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <span data-i18n="car_style_label">Car Style:</span>
+        <select id="carStyleSelect" onchange="applyCarStyle(this.value)" style="background:var(--bg-main-alt); color:var(--text-main); border:1px solid var(--accent); padding:6px 12px; border-radius:4px; cursor:pointer; font-size:14px; outline:none;">
+          <option value="default" data-i18n="style_default">Simple</option>
+          <option value="supercar" data-i18n="style_supercar">Modern Supercar</option>
+          <option value="classic" data-i18n="style_classic">Classic Sports Car</option>
+          <option value="hatchback" data-i18n="style_hatchback">Blueprint Hatchback</option>
+          <option value="coupe" data-i18n="style_coupe">Blueprint Coupe</option>
         </select>
       </div>
 
@@ -1087,7 +1314,13 @@ void handleRoot(){
       ssid_empty: "SSID cannot be empty",
       pass_short: "Password must be at least 8 characters",
       hx_label: "HX711 Count:",
-      hx_reboot_msg: "Reboot required to apply HX711 count change. Click Save & Reboot below."
+      hx_reboot_msg: "Reboot required to apply HX711 count change. Click Save & Reboot below.",
+      car_style_label: "Car Style:",
+      style_default: "Simple",
+      style_supercar: "Modern Supercar",
+      style_classic: "Classic Sports Car",
+      style_hatchback: "Blueprint Hatchback",
+      style_coupe: "Blueprint Coupe"
     },
     de: {
       title: "Radlastwaagen-System",
@@ -1127,7 +1360,13 @@ void handleRoot(){
       ssid_empty: "SSID darf nicht leer sein",
       pass_short: "Passwort muss mindestens 8 Zeichen lang sein",
       hx_label: "Anzahl HX711:",
-      hx_reboot_msg: "Neustart erforderlich, um die HX711-Anzahl zu ändern. Unten auf Speichern & Neustart klicken."
+      hx_reboot_msg: "Neustart erforderlich, um die HX711-Anzahl zu ändern. Unten auf Speichern & Neustart klicken.",
+      car_style_label: "Fahrzeug-Stil:",
+      style_default: "Einfach",
+      style_supercar: "Moderner Supersportwagen",
+      style_classic: "Klassischer Sportwagen",
+      style_hatchback: "Fließheck-Blaupause",
+      style_coupe: "Coupe-Blaupause"
     },
     es: {
       title: "Sistema de Pesaje",
@@ -1167,7 +1406,13 @@ void handleRoot(){
       ssid_empty: "El SSID no puede estar vacío",
       pass_short: "La contraseña debe tener al menos 8 caracteres",
       hx_label: "Cantidad de HX711:",
-      hx_reboot_msg: "Se requiere reiniciar para aplicar el cambio de cantidad de HX711. Haga clic en Guardar y Reiniciar abajo."
+      hx_reboot_msg: "Se requiere reiniciar para aplicar el cambio de cantidad de HX711. Haga clic en Guardar y Reiniciar abajo.",
+      car_style_label: "Estilo de Auto:",
+      style_default: "Simple",
+      style_supercar: "Superdeportivo Moderno",
+      style_classic: "Auto Deportivo Clásico",
+      style_hatchback: "Plano Hatchback",
+      style_coupe: "Plano Cupé"
     }
   };
 
@@ -1175,6 +1420,7 @@ void handleRoot(){
   let currentTheme = localStorage.getItem('theme') || 'dark';
   let currentAccent = localStorage.getItem('accent') || '#3b82f6';
   let currentLang = localStorage.getItem('lang') || 'en';
+  let currentCarStyle = localStorage.getItem('carStyle') || 'coupe';
 
   function applySettings() {
     if(currentTheme === 'light') {
@@ -1185,6 +1431,23 @@ void handleRoot(){
     setLanguage(currentLang);
     document.documentElement.style.setProperty('--accent', currentAccent);
     document.getElementById('accentPicker').value = currentAccent;
+    applyCarStyle(currentCarStyle);
+  }
+
+  function applyCarStyle(style) {
+    currentCarStyle = style;
+    localStorage.setItem('carStyle', style);
+    document.querySelectorAll('.car-style-group').forEach(el => {
+      el.style.display = 'none';
+    });
+    let selGroup = document.getElementById('car_style_' + style);
+    if (selGroup) {
+      selGroup.style.display = 'block';
+    }
+    let selectEl = document.getElementById('carStyleSelect');
+    if (selectEl) {
+      selectEl.value = style;
+    }
   }
 
   function setLanguage(lang) {
@@ -1864,7 +2127,7 @@ void setup(){
   Serial.println("HX711 optional - will detect automatically");
 
   String ssid = prefs.getString("wifi_ssid", "Race_Scales");
-  String pass = prefs.getString("wifi_pass", "123456789");
+  String pass = prefs.getString("wifi_pass", "12345678");
 
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(ssid.c_str(), pass.c_str(), 1);
