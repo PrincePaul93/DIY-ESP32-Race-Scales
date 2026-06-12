@@ -225,7 +225,8 @@ void handleData(){
   json+="\"fl_wa\":"+String(FL_wA)+",\"fl_wb\":"+String(FL_wB)+",\"fl_wc\":"+String(FL_wC)+",";
   json+="\"fr_wa\":"+String(FR_wA)+",\"fr_wb\":"+String(FR_wB)+",\"fr_wc\":"+String(FR_wC)+",";
   json+="\"rl_wa\":"+String(RL_wA)+",\"rl_wb\":"+String(RL_wB)+",\"rl_wc\":"+String(RL_wC)+",";
-  json+="\"rr_wa\":"+String(RR_wA)+",\"rr_wb\":"+String(RR_wB)+",\"rr_wc\":"+String(RR_wC);
+  json+="\"rr_wa\":"+String(RR_wA)+",\"rr_wb\":"+String(RR_wB)+",\"rr_wc\":"+String(RR_wC)+",";
+  json+="\"hx_count\":"+String(hxCount);
 
   json+="}";
 
@@ -418,6 +419,10 @@ void handleRoot(){
     top:50%;
     left:50%;
     transform:translate(-50%,-50%);
+  }
+
+  #cgSymbol {
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease;
   }
 
   .top{
@@ -705,29 +710,110 @@ void handleRoot(){
   <div class="car">
 
   <svg width="120" height="220" viewBox="0 0 220 300">
+    <defs>
+      <!-- Premium metallic body gradient -->
+      <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#2c2f38"/>
+        <stop offset="50%" stop-color="#1c1e24"/>
+        <stop offset="100%" stop-color="#121317"/>
+      </linearGradient>
+      <!-- Glass canopy gradient -->
+      <linearGradient id="glassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#16181f"/>
+        <stop offset="100%" stop-color="#0a0b0e"/>
+      </linearGradient>
+    </defs>
 
-  <path fill="var(--accent)" stroke="#111" stroke-width="3" d="
-  M85 10
-  L135 10
-  Q155 20 160 50
-  L165 100
-  L165 200
-  L160 250
-  Q155 280 135 290
-  L85 290
-  Q65 280 60 250
-  L55 200
-  L55 100
-  L60 50
-  Q65 20 85 10
-  Z"/>
+    <!-- Classic Dual Exhaust Pipes -->
+    <rect x="92" y="276" width="6" height="12" rx="1.5" fill="#7f8c8d"/>
+    <rect x="122" y="276" width="6" height="12" rx="1.5" fill="#7f8c8d"/>
 
-  <rect x="75" y="55" width="70" height="40" rx="10" fill="#2f2f2f"/>
-  <rect x="75" y="215" width="70" height="40" rx="10" fill="#2f2f2f"/>
+    <!-- Wheels (Tires & Classic Hubcaps) -->
+    <!-- Front Left Wheel -->
+    <rect x="62" y="56" width="10" height="30" rx="3" fill="#1a1a1a"/>
+    <circle cx="67" cy="71" r="4.5" fill="var(--accent)" stroke="#fff" stroke-width="0.5"/>
+    
+    <!-- Front Right Wheel -->
+    <rect x="148" y="56" width="10" height="30" rx="3" fill="#1a1a1a"/>
+    <circle cx="153" cy="71" r="4.5" fill="var(--accent)" stroke="#fff" stroke-width="0.5"/>
+    
+    <!-- Rear Left Wheel -->
+    <rect x="54" y="200" width="12" height="36" rx="4" fill="#1a1a1a"/>
+    <circle cx="60" cy="218" r="5.5" fill="var(--accent)" stroke="#fff" stroke-width="0.5"/>
+    
+    <!-- Rear Right Wheel -->
+    <rect x="154" y="200" width="12" height="36" rx="4" fill="#1a1a1a"/>
+    <circle cx="160" cy="218" r="5.5" fill="var(--accent)" stroke="#fff" stroke-width="0.5"/>
 
-  <polygon points="55,120 45,130 55,140" fill="var(--accent)"/>
-  <polygon points="165,120 175,130 165,140" fill="var(--accent)"/>
+    <!-- Classic Bullet Side Mirrors -->
+    <!-- Left Stalk and Mirror -->
+    <line x1="68" y1="110" x2="74" y2="114" stroke="var(--accent)" stroke-width="1.5"/>
+    <circle cx="68" cy="110" r="4.5" fill="var(--accent)" stroke="#111" stroke-width="0.5"/>
+    <!-- Right Stalk and Mirror -->
+    <line x1="152" y1="110" x2="146" y2="114" stroke="var(--accent)" stroke-width="1.5"/>
+    <circle cx="152" cy="110" r="4.5" fill="var(--accent)" stroke="#111" stroke-width="0.5"/>
 
+    <!-- Main Car Body -->
+    <path fill="url(#bodyGrad)" stroke="var(--accent)" stroke-width="2.5" d="
+      M 110, 35
+      C 122,35 136,37 142,42
+      C 148,47 150,58 150,70
+      C 150,85 148,105 146,130
+      C 144,155 144,180 148,200
+      C 152,215 158,225 158,242
+      C 158,258 152,270 140,275
+      C 130,278 120,278 110,278
+      C 100,278 90,278 80,275
+      C 68,270 62,258 62,242
+      C 62,225 68,215 72,200
+      C 76,180 76,155 74,130
+      C 72,105 70,85 70,70
+      C 70,58 72,47 78,42
+      C 84,37 98,35 110,35
+      Z"/>
+
+    <!-- Classic Racing/Hood Stripes -->
+    <rect x="99" y="36" width="4" height="78" fill="var(--accent)" opacity="0.35"/>
+    <rect x="117" y="36" width="4" height="78" fill="var(--accent)" opacity="0.35"/>
+
+    <!-- Classic Round Headlights -->
+    <circle cx="80" cy="52" r="7.5" fill="#fffae0" stroke="var(--accent)" stroke-width="1.5"/>
+    <circle cx="140" cy="52" r="7.5" fill="#fffae0" stroke="var(--accent)" stroke-width="1.5"/>
+
+    <!-- Classic Cabin Glass (Windshield, Sides, Rear Window) -->
+    <path fill="url(#glassGrad)" stroke="#374151" stroke-width="1.5" d="
+      M 86, 115
+      C 110, 110 110, 110 134, 115
+      C 138, 140 138, 185 132, 198
+      C 110, 202 110, 202 88, 198
+      C 82, 185 82, 140 86, 115
+      Z"/>
+    <!-- Windshield Divider Frame -->
+    <path d="M 86, 138 C 110, 134 110, 134 134, 138" stroke="#4b5563" stroke-width="1.5" fill="none"/>
+    <!-- Rear Glass Window -->
+    <path fill="#101114" stroke="#2c2e35" stroke-width="1" d="
+      M 94, 172
+      C 110, 169 110, 169 126, 172
+      C 124, 192 120, 195 110, 196
+      C 100, 195 96, 192 94, 172
+      Z"/>
+
+    <!-- Glossy Windshield Shine -->
+    <path d="M 90, 126 C 105, 115 115, 115 130, 126 C 124, 131 114, 132 90, 126 Z" fill="rgba(255, 255, 255, 0.12)"/>
+
+    <!-- Classic Front Bumper (Chrome Accent) -->
+    <path d="M 78, 42 Q 110, 37 142, 42" stroke="var(--accent)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+    <!-- Classic Rear Bumper (Chrome Accent) -->
+    <path d="M 74, 274 Q 110, 279 146, 274" stroke="var(--accent)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+    <!-- CG (Center of Gravity) Indicator Symbol -->
+    <g id="cgSymbol" transform="translate(110, 150)" style="opacity: 0.3;">
+      <circle cx="0" cy="0" r="12" fill="var(--bg-panel)" stroke="var(--text-main)" stroke-width="2"/>
+      <path d="M0,0 L0,-12 A12,12 0 0,1 12,0 Z" fill="var(--text-main)"/>
+      <path d="M0,0 L0,12 A12,12 0 0,1 -12,0 Z" fill="var(--text-main)"/>
+      <circle cx="0" cy="0" r="3" fill="var(--accent)"/>
+    </g>
   </svg>
 
   </div>
@@ -839,10 +925,13 @@ void handleRoot(){
 
       <div class="settings-row">
         <span data-i18n="hx_label">HX711 Count:</span>
-        <select id="hxSelect" style="background:var(--bg-main-alt); color:var(--text-main); border:1px solid var(--accent); padding:6px 12px; border-radius:4px; cursor:pointer; font-size:14px; outline:none;">
+        <select id="hxSelect" onchange="checkHxChange()" style="background:var(--bg-main-alt); color:var(--text-main); border:1px solid var(--accent); padding:6px 12px; border-radius:4px; cursor:pointer; font-size:14px; outline:none;">
           <option value="1">1</option>
           <option value="3">3</option>
         </select>
+      </div>
+      <div id="hxRebootMsg" style="display:none; font-size:12px; color:#ef4444; margin-top:-10px; margin-bottom:10px; text-align:left; line-height:1.4;" data-i18n="hx_reboot_msg">
+        Reboot required to apply HX711 count change. Click Save & Reboot below.
       </div>
       
       <div class="settings-row">
@@ -869,14 +958,7 @@ void handleRoot(){
       
       <div id="debugPanel" style="font-size:12px; color:var(--accent);">
         <h4 style="margin:0 0 8px 0; color:var(--text-main);" data-i18n="debug_title">Raw Debug Info</h4>
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-          <span><b>FL</b> A:<span id="fl_wa">-</span> B:<span id="fl_wb">-</span> C:<span id="fl_wc">-</span></span>
-          <span><b>FR</b> A:<span id="fr_wa">-</span> B:<span id="fr_wb">-</span> C:<span id="fr_wc">-</span></span>
-        </div>
-        <div style="display:flex; justify-content:space-between;">
-          <span><b>RL</b> A:<span id="rl_wa">-</span> B:<span id="rl_wb">-</span> C:<span id="rl_wc">-</span></span>
-          <span><b>RR</b> A:<span id="rr_wa">-</span> B:<span id="rr_wb">-</span> C:<span id="rr_wc">-</span></span>
-        </div>
+        <div id="debugContent"></div>
       </div>
       
       <div style="text-align:right; margin-top:20px;">
@@ -1004,7 +1086,8 @@ void handleRoot(){
       wifi_error: "Failed to save settings: ",
       ssid_empty: "SSID cannot be empty",
       pass_short: "Password must be at least 8 characters",
-      hx_label: "HX711 Count:"
+      hx_label: "HX711 Count:",
+      hx_reboot_msg: "Reboot required to apply HX711 count change. Click Save & Reboot below."
     },
     de: {
       title: "Radlastwaagen-System",
@@ -1043,7 +1126,8 @@ void handleRoot(){
       wifi_error: "Einstellungen konnten nicht gespeichert werden: ",
       ssid_empty: "SSID darf nicht leer sein",
       pass_short: "Passwort muss mindestens 8 Zeichen lang sein",
-      hx_label: "Anzahl HX711:"
+      hx_label: "Anzahl HX711:",
+      hx_reboot_msg: "Neustart erforderlich, um die HX711-Anzahl zu ändern. Unten auf Speichern & Neustart klicken."
     },
     es: {
       title: "Sistema de Pesaje",
@@ -1082,7 +1166,8 @@ void handleRoot(){
       wifi_error: "Error al guardar la configuración: ",
       ssid_empty: "El SSID no puede estar vacío",
       pass_short: "La contraseña debe tener al menos 8 caracteres",
-      hx_label: "Cantidad de HX711:"
+      hx_label: "Cantidad de HX711:",
+      hx_reboot_msg: "Se requiere reiniciar para aplicar el cambio de cantidad de HX711. Haga clic en Guardar y Reiniciar abajo."
     }
   };
 
@@ -1138,6 +1223,7 @@ void handleRoot(){
     applySettings();
   }
 
+  let originalHxCount = 3;
   function loadWifiConfig() {
     fetch("/wifi_config")
     .then(r => r.json())
@@ -1145,8 +1231,20 @@ void handleRoot(){
       document.getElementById("wifiSsidInput").value = data.ssid || "";
       document.getElementById("wifiPassInput").value = data.pass || "";
       document.getElementById("hxSelect").value = data.hx_count || 3;
+      originalHxCount = data.hx_count || 3;
+      checkHxChange();
     })
     .catch(err => console.error("Error loading WiFi config:", err));
+  }
+
+  function checkHxChange() {
+    let currentHx = document.getElementById("hxSelect").value;
+    let msg = document.getElementById("hxRebootMsg");
+    if (currentHx != originalHxCount) {
+      msg.style.display = "block";
+    } else {
+      msg.style.display = "none";
+    }
   }
 
   function toggleSettings() {
@@ -1368,6 +1466,37 @@ void handleRoot(){
     }
   }
 
+  let lastRenderedHxCount = null;
+  function updateDebugPanelStructure(hxCount) {
+    if (lastRenderedHxCount === hxCount) return;
+    lastRenderedHxCount = hxCount;
+    let content = document.getElementById("debugContent");
+    if (!content) return;
+    if (hxCount == 1) {
+      content.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span><b>FL:</b> <span id="fl_wa">-</span></span>
+          <span><b>FR:</b> <span id="fr_wa">-</span></span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span><b>RL:</b> <span id="rl_wa">-</span></span>
+          <span><b>RR:</b> <span id="rr_wa">-</span></span>
+        </div>
+      `;
+    } else {
+      content.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span><b>FL</b> A:<span id="fl_wa">-</span> B:<span id="fl_wb">-</span> C:<span id="fl_wc">-</span></span>
+          <span><b>FR</b> A:<span id="fr_wa">-</span> B:<span id="fr_wb">-</span> C:<span id="fr_wc">-</span></span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span><b>RL</b> A:<span id="rl_wa">-</span> B:<span id="rl_wb">-</span> C:<span id="rl_wc">-</span></span>
+          <span><b>RR</b> A:<span id="rr_wa">-</span> B:<span id="rr_wb">-</span> C:<span id="rr_wc">-</span></span>
+        </div>
+      `;
+    }
+  }
+
   function refresh(){
     fetch("/data")
     .then(r=>r.json())
@@ -1388,18 +1517,24 @@ void handleRoot(){
       rightpct.innerText=d.rightpct
       crosspct.innerText=d.cross
       
+      let activeHxCount = d.hx_count || originalHxCount || 3;
+      updateDebugPanelStructure(activeHxCount);
+
       document.getElementById("fl_wa").innerText = (d.fl_wa||0).toFixed(0);
-      document.getElementById("fl_wb").innerText = (d.fl_wb||0).toFixed(0);
-      document.getElementById("fl_wc").innerText = (d.fl_wc||0).toFixed(0);
       document.getElementById("fr_wa").innerText = (d.fr_wa||0).toFixed(0);
-      document.getElementById("fr_wb").innerText = (d.fr_wb||0).toFixed(0);
-      document.getElementById("fr_wc").innerText = (d.fr_wc||0).toFixed(0);
       document.getElementById("rl_wa").innerText = (d.rl_wa||0).toFixed(0);
-      document.getElementById("rl_wb").innerText = (d.rl_wb||0).toFixed(0);
-      document.getElementById("rl_wc").innerText = (d.rl_wc||0).toFixed(0);
       document.getElementById("rr_wa").innerText = (d.rr_wa||0).toFixed(0);
-      document.getElementById("rr_wb").innerText = (d.rr_wb||0).toFixed(0);
-      document.getElementById("rr_wc").innerText = (d.rr_wc||0).toFixed(0);
+
+      if (activeHxCount == 3) {
+        document.getElementById("fl_wb").innerText = (d.fl_wb||0).toFixed(0);
+        document.getElementById("fl_wc").innerText = (d.fl_wc||0).toFixed(0);
+        document.getElementById("fr_wb").innerText = (d.fr_wb||0).toFixed(0);
+        document.getElementById("fr_wc").innerText = (d.fr_wc||0).toFixed(0);
+        document.getElementById("rl_wb").innerText = (d.rl_wb||0).toFixed(0);
+        document.getElementById("rl_wc").innerText = (d.rl_wc||0).toFixed(0);
+        document.getElementById("rr_wb").innerText = (d.rr_wb||0).toFixed(0);
+        document.getElementById("rr_wc").innerText = (d.rr_wc||0).toFixed(0);
+      }
 
       setStatus("fl_status",d.fl_online)
       setStatus("fr_status",d.fr_online)
@@ -1420,6 +1555,35 @@ document.getElementById("fl_fill").style.width = d.fl_batt + "%";
 document.getElementById("fr_fill").style.width = d.fr_batt + "%";
 document.getElementById("rl_fill").style.width = d.rl_batt + "%";
 document.getElementById("rr_fill").style.width = d.rr_batt + "%";
+
+      // CG (Center of Gravity) dynamic location calculation
+      let totalW = d.total || 0;
+      let cgSymbol = document.getElementById("cgSymbol");
+      if (cgSymbol) {
+        let cgX = 110;
+        let cgY = 150;
+        if (totalW > 0) {
+          let leftW = (d.fl_online ? d.fl : 0) + (d.rl_online ? d.rl : 0);
+          let rightW = (d.fr_online ? d.fr : 0) + (d.rr_online ? d.rr : 0);
+          let rearW = (d.rl_online ? d.rl : 0) + (d.rr_online ? d.rr : 0);
+          
+          let rightPct = (rightW / totalW) * 100;
+          let rearPct = (rearW / totalW) * 100;
+          
+          let xMin = 80;
+          let xMax = 140;
+          cgX = xMin + (rightPct / 100) * (xMax - xMin);
+          
+          let yMin = 80;
+          let yMax = 220;
+          cgY = yMin + (rearPct / 100) * (yMax - yMin);
+          
+          cgSymbol.style.opacity = "1";
+        } else {
+          cgSymbol.style.opacity = "0.3";
+        }
+        cgSymbol.setAttribute("transform", `translate(${cgX.toFixed(1)}, ${cgY.toFixed(1)})`);
+      }
 
     })
 
@@ -1624,7 +1788,7 @@ void onReceive(const esp_now_recv_info *info, const uint8_t *data, int len){
 
 void handleWifiConfig(){
   String ssid = prefs.getString("wifi_ssid", "Race_Scales");
-  String pass = prefs.getString("wifi_pass", "123456789");
+  String pass = prefs.getString("wifi_pass", "12345678");
   int hx = prefs.getInt("hx_count", 3);
   String json = "{\"ssid\":\"" + ssid + "\",\"pass\":\"" + pass + "\",\"hx_count\":" + String(hx) + "}";
   server.send(200, "application/json", json);
@@ -1845,6 +2009,36 @@ void loop(){
    FL_batt = voltage;
 
   server.handleClient();
+
+  // Handle periodic config re-broadcast and update timeout if in updating mode
+  static unsigned long lastBroadcastTime = 0;
+  static unsigned long updateStartTime = 0;
+  static bool prevUpdating = false;
+
+  if (is_updating) {
+    if (!prevUpdating) {
+      updateStartTime = millis();
+      lastBroadcastTime = millis();
+      prevUpdating = true;
+    }
+    
+    // Broadcast config update payload every 500ms
+    if (millis() - lastBroadcastTime > 500) {
+      lastBroadcastTime = millis();
+      uint8_t payload[2] = {'C', (uint8_t)hxCount};
+      uint8_t broadcastAddr[6] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+      esp_now_send(broadcastAddr, payload, sizeof(payload));
+      Serial.printf("Re-broadcasting config update (HX711 Count: %d) to children...\n", hxCount);
+    }
+
+    // Safety timeout: reboot master if stuck updating for more than 10 seconds
+    if (millis() - updateStartTime > 10000) {
+      Serial.println("Update timeout reached. Rebooting master...");
+      ESP.restart();
+    }
+  } else {
+    prevUpdating = false;
+  }
 
   if (shouldRestart && millis() > restartTime) {
     ESP.restart();
