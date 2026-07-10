@@ -235,15 +235,10 @@ void handleData(){
 
 void handleTare(){
 
-  if (hxCount == 1) {
-    FL_offset = scaleA.read_average(10);
-  } else {
-    FL_offset = scaleA.read_average(10) + scaleB.read_average(10) + scaleC.read_average(10);
-  }
+  FL_offset = FL_wA + FL_wB + FL_wC;
   FR_offset = FR_raw;
   RL_offset = RL_raw;
   RR_offset = RR_raw;
-
 
   prefs.putFloat("FL_offset", FL_offset); 
 
@@ -1897,12 +1892,7 @@ void handleCalibrate(){
   float known = server.arg("weight").toFloat();
 
   if(pad=="FL"){
-    float reading = 0;
-    if (hxCount == 1) {
-      reading = scaleA.read_average(20);
-    } else {
-      reading = scaleA.read_average(20) + scaleB.read_average(20) + scaleC.read_average(20);
-    }
+    float reading = FL_wA + FL_wB + FL_wC;
     float net = reading - FL_offset;
 
     FL_cal = net / known;
@@ -2219,9 +2209,9 @@ void loop(){
       if(FL_offset == 0){   
         delay(500);
         if(hxCount == 1){
-          FL_offset = scaleA.read_average(20);
+          FL_offset = scaleA.read_average(10);
         } else {
-          FL_offset = scaleA.read_average(20) + scaleB.read_average(20) + scaleC.read_average(20);
+          FL_offset = scaleA.read_average(10) + scaleB.read_average(10) + scaleC.read_average(10);
         }
         prefs.putFloat("FL_offset", FL_offset);
       }
@@ -2232,39 +2222,51 @@ void loop(){
   }
 
   /* read FL scale */
-  bool canRead = false;
-  if(hxCount == 1){
-    canRead = scalePresent && scaleA.is_ready();
-  } else {
-    canRead = scalePresent && scaleA.is_ready() && scaleB.is_ready() && scaleC.is_ready();
-  }
-
-  if(canRead){
-    float rawA = scaleA.read_average(10);
-    float raw = 0;
-    if(hxCount == 1){
-      raw = rawA;
-      FL_wA = rawA;
-      FL_wB = 0;
-      FL_wC = 0;
+  if (scalePresent) {
+    if (hxCount == 1) {
+      if (scaleA.is_ready()) {
+        float rawA = scaleA.read();
+        FL_wA = rawA;
+        FL_wB = 0;
+        FL_wC = 0;
+        float raw = rawA;
+        Serial.println(raw);
+        float FL_new = (raw - FL_offset) / FL_cal;
+        applyStability(FL_new, lastFL, FL_locked);
+        if(FL_filtered == 0){
+          FL_filtered = FL_new;
+        }
+        FL_filtered = FL_filtered + alpha * (FL_new - FL_filtered);
+        FL = FL_filtered;
+        if(abs(FL) < 0.5) FL = 0;
+        FL = round(FL * 2) / 2.0;
+      }
     } else {
-      float rawB = scaleB.read_average(10);
-      float rawC = scaleC.read_average(10);
-      raw = rawA + rawB + rawC;
-      FL_wA = rawA;
-      FL_wB = rawB;
-      FL_wC = rawC;
+      bool readyA = scaleA.is_ready();
+      bool readyB = scaleB.is_ready();
+      bool readyC = scaleC.is_ready();
+      
+      if (readyA || readyB || readyC) {
+        float rawA = readyA ? scaleA.read() : FL_wA;
+        float rawB = readyB ? scaleB.read() : FL_wB;
+        float rawC = readyC ? scaleC.read() : FL_wC;
+        
+        FL_wA = rawA;
+        FL_wB = rawB;
+        FL_wC = rawC;
+        float raw = rawA + rawB + rawC;
+        Serial.println(raw);
+        float FL_new = (raw - FL_offset) / FL_cal;
+        applyStability(FL_new, lastFL, FL_locked);
+        if(FL_filtered == 0){
+          FL_filtered = FL_new;
+        }
+        FL_filtered = FL_filtered + alpha * (FL_new - FL_filtered);
+        FL = FL_filtered;
+        if(abs(FL) < 0.5) FL = 0;
+        FL = round(FL * 2) / 2.0;
+      }
     }
-    Serial.println(raw);
-    float FL_new = (raw - FL_offset) / FL_cal;
-    applyStability(FL_new, lastFL, FL_locked);
-    if(FL_filtered == 0){
-      FL_filtered = FL_new;
-    }
-    FL_filtered = FL_filtered + alpha * (FL_new - FL_filtered);
-    FL = FL_filtered;
-    if(abs(FL) < 0.5) FL = 0;
-    FL = round(FL * 2) / 2.0;
   }
 
    int raw = analogRead(FL_BAT_PIN);\
