@@ -1,4 +1,3 @@
-
 /*
 traviscea DIY Race Scales – Version 1.0
 Copyright (c) 2026 Travis Way
@@ -20,7 +19,7 @@ Copyright (c) 2026 Travis Way
 #define MAX_HX711 3
 
 /* ---------- PAD ID ---------- */
-#define PAD_ID "RR"
+#define PAD_ID "FR"
 
 /* ---------- HX711 PINS ---------- */
 #define HX_DT_A 4
@@ -36,7 +35,7 @@ HX711 scaleA;
 HX711 scaleB;
 HX711 scaleC;
 Preferences prefs;
-uint8_t hxCount = 1;
+uint8_t hxCount = 3;
 
 /* ---------- CAL + OFFSET ---------- */
 float calibration_factor = -3685.4;
@@ -53,15 +52,6 @@ typedef struct {
 } ScaleData;
 
 ScaleData data;
-
-
-/* ---------- MASTER MAC ADDRESS ---------- */
-/* Replace with MAC of your ESP32-S3
-Example, if your brain/main esp32 outputs: AP MAC: 4E:DD:76:6F:A5:45
-then your masterAddress =
-const uint8_t masterAddress[] = {0x4E,0xDD,0x76,0x6F,0xA5,0x45};
-uint8_t masterMac[6] = {0x4E,0xDD,0x76,0x6F,0xA5,0x45};
-*/
 
 /* ---------- MASTER MAC ADDRESS ---------- */
 const uint8_t masterAddress[] = {0x30,0xC6,0xF7,0x31,0x9A,0xC5};
@@ -206,10 +196,12 @@ void loop() {
     ESP.restart();
   }
 
+  bool updated = false;
+
   /* SCALE READ */
   if (hxCount == 1) {
-    if(scaleA.is_ready()){
-      float rawA = scaleA.read_average(10);
+    if (scaleA.is_ready()) {
+      float rawA = scaleA.read();
       float weight = rawA - offset;
       data.weight = weight;
       data.wA = rawA;
@@ -217,52 +209,62 @@ void loop() {
       data.wC = 0;
       Serial.print("Raw: "); Serial.print(rawA);
       Serial.print(" | Weight: "); Serial.println(weight);
+      updated = true;
     }
   } else {
-    // Read each sensor if ready; missing sensors get 0
-    float rawA = 0, rawB = 0, rawC = 0;
-    if (scaleA.is_ready()) rawA = scaleA.read_average(10);
-    if (scaleB.is_ready()) rawB = scaleB.read_average(10);
-    if (scaleC.is_ready()) rawC = scaleC.read_average(10);
-    float rawTotal = rawA + rawB + rawC;
-    float weight = rawTotal - offset;
-    data.weight = weight;
-    data.wA = rawA;
-    data.wB = rawB;
-    data.wC = rawC;
-    Serial.print("Raw Total: "); Serial.print(rawTotal);
-    Serial.print(" | Weight: "); Serial.println(weight);
+    bool readyA = scaleA.is_ready();
+    bool readyB = scaleB.is_ready();
+    bool readyC = scaleC.is_ready();
+    
+    if (readyA || readyB || readyC) {
+      float rawA = readyA ? scaleA.read() : data.wA;
+      float rawB = readyB ? scaleB.read() : data.wB;
+      float rawC = readyC ? scaleC.read() : data.wC;
+      
+      float rawTotal = rawA + rawB + rawC;
+      float weight = rawTotal - offset;
+      data.weight = weight;
+      data.wA = rawA;
+      data.wB = rawB;
+      data.wC = rawC;
+      Serial.print("Raw Total: "); Serial.print(rawTotal);
+      Serial.print(" | Weight: "); Serial.println(weight);
+      updated = true;
+    }
   }
 
-  /* BATTERY */
-  int rawBat = analogRead(BAT_PIN);
-  float voltage = (rawBat / 4095.0) * 3.3 * 2.0;
-  data.battery = voltage;
+  if (updated) {
+    /* BATTERY */
+    int rawBat = analogRead(BAT_PIN);
+    float voltage = (rawBat / 4095.0) * 3.3 * 2.0;
+    data.battery = voltage;
 
-  /* TRANSMIT DATA */
-  addPeerIfNeeded(masterMac);
-  esp_now_send(masterMac, (uint8_t *)&data, sizeof(data));
+    /* TRANSMIT DATA */
+    addPeerIfNeeded(masterMac);
+    esp_now_send(masterMac, (uint8_t *)&data, sizeof(data));
+  }
 
   /* SERIAL COMMANDS (OPTIONAL DEBUG CONTROL) */
-  if(Serial.available()){
+  if (Serial.available()) {
     char c = Serial.read();
 
-    if(c == 't'){  // tare
+    if (c == 't') {  // tare
       Serial.println("Manual tare...");
       if (hxCount == 1) {
-        offset = scaleA.read_average(20);
+        offset = scaleA.read_average(10);
       } else {
-        offset = scaleA.read_average(20) + scaleB.read_average(20) + scaleC.read_average(20);
+        offset = scaleA.read_average(10) + scaleB.read_average(10) + scaleC.read_average(10);
       }
       prefs.putFloat("offset", offset);
     }
 
-    if(c == 'c'){  // reset calibration
+    if (c == 'c') {  // reset calibration
       Serial.println("Reset calibration");
       calibration_factor = -3685.4;
       prefs.putFloat("cal", calibration_factor);
     }
   }
 
-  delay(100);
+  // Small delay to yield to ESP32 system tasks
+  delay(10);
 }
