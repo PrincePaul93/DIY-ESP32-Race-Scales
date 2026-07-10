@@ -35,7 +35,7 @@ HX711 scaleA;
 HX711 scaleB;
 HX711 scaleC;
 Preferences prefs;
-uint8_t hxCount = 3;
+uint8_t hxCount = 1;
 
 /* ---------- CAL + OFFSET ---------- */
 float calibration_factor = -3685.4;
